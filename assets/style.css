@@ -1,0 +1,20 @@
+:root{--bg:#FBF8F0;--surface:#FFFEFB;--tint:#F1EBDD;--border:#EAE2D0;--strong:#8C826F;--ink:#2E2A24;--muted:#675E4E;--salvia:#3F6B4F;--on:#FFFFFF;--danger:#A8402F;
+--serif:"Fraunces",Georgia,"Times New Roman",serif;--sans:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;--shadow:0 18px 50px rgba(40,30,20,.14),0 2px 8px rgba(40,30,20,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#1F1B16;--surface:#2A251F;--tint:#332D25;--border:#3D362C;--strong:#82786A;--ink:#F2EBDD;--muted:#B8AD98;--salvia:#8FBF9C;--on:#14201A;--danger:#E58C7A;--shadow:0 18px 50px rgba(0,0,0,.45)}}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow);padding:36px 30px 30px;text-align:center}
+.card.doc{max-width:720px;text-align:left}
+.logo{width:64px;height:64px;border-radius:22.5%;box-shadow:0 7px 18px rgba(40,30,20,.2)}
+h1{font-family:var(--serif);font-weight:600;font-size:28px;letter-spacing:-.01em;margin:14px 0 8px}
+h2{font-family:var(--serif);font-size:20px;margin:26px 0 6px}
+p{margin:8px 0;color:var(--ink)}.muted{color:var(--muted);font-size:14px}
+.ok{color:var(--salvia)}.err{color:var(--danger)}
+.icon{font-size:42px;line-height:1;margin:6px 0 0}
+form{text-align:left;margin-top:18px}label{display:block;font-weight:700;font-size:13px;color:var(--muted);margin:12px 0 6px 2px}
+input{width:100%;min-height:48px;border-radius:13px;border:1px solid var(--strong);background:var(--bg);color:var(--ink);font:inherit;padding:0 14px}
+input:focus{outline:2px solid var(--salvia);outline-offset:1px;border-color:var(--salvia)}
+button{width:100%;min-height:52px;margin-top:18px;border:0;border-radius:14px;background:var(--salvia);color:var(--on);font:800 16px var(--sans);cursor:pointer}
+button[disabled]{opacity:.5;cursor:default}
+a{color:var(--salvia)}footer{margin-top:22px;font-size:12.5px;color:var(--muted)}
+ul{padding-left:20px}li{margin:4px 0}

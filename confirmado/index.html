@@ -1,0 +1,18 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><link rel="icon" href="/assets/favicon.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;600;700;800&display=swap"><link rel="stylesheet" href="/assets/style.css"><title>Correo confirmado · Meridad</title></head><body><main class="card" id="card">
+<img class="logo" src="/assets/logo.png" alt="Meridad">
+<div class="icon ok" id="icon">✓</div>
+<h1 id="title">Tu correo está confirmado</h1>
+<p id="msg">Ya puedes volver a la app de Meridad en tu iPad e iniciar sesión con tu correo y tu contraseña.</p>
+<p class="muted" id="hint">Puedes cerrar esta página.</p>
+<footer><a href="/terminos/">Términos</a> · <a href="/privacidad/">Privacidad</a></footer></main>
+<script>
+// Si el enlace trae un error (caducado o ya usado) se dice; los tokens de la URL no se usan ni se guardan: se borran.
+const p = new URLSearchParams(location.hash.replace(/^#/, '') || location.search);
+if (p.get('error') || p.get('error_code')) {
+  document.getElementById('icon').textContent = '!'; document.getElementById('icon').className = 'icon err';
+  document.getElementById('title').textContent = 'Este enlace ya no sirve';
+  document.getElementById('msg').textContent = 'El enlace caducó o ya se usó. Si tu cuenta ya está confirmada, entra directamente en la app. Si no, vuelve a registrarte en Meridad para recibir un correo nuevo.';
+  document.getElementById('hint').textContent = '';
+}
+history.replaceState(null, '', location.pathname);
+</script></body></html>

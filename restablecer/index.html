@@ -1,0 +1,48 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><link rel="icon" href="/assets/favicon.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;600;700;800&display=swap"><link rel="stylesheet" href="/assets/style.css"><title>Nueva contraseña · Meridad</title></head><body><main class="card" id="card">
+<img class="logo" src="/assets/logo.png" alt="Meridad">
+<h1 id="title">Elige tu contraseña nueva</h1>
+<p class="muted" id="sub">Mínimo 8 caracteres.</p>
+<form id="form" autocomplete="off">
+  <label for="pw">Contraseña nueva</label><input id="pw" type="password" autocomplete="new-password" minlength="8" required>
+  <label for="pw2">Repite la contraseña</label><input id="pw2" type="password" autocomplete="new-password" minlength="8" required>
+  <p class="err" id="error" role="alert"></p>
+  <button id="go" type="submit">Guardar contraseña</button>
+</form>
+<p id="done" class="ok" hidden></p>
+<footer><a href="/terminos/">Términos</a> · <a href="/privacidad/">Privacidad</a></footer></main>
+<script>
+const SUPABASE_URL = 'https://nnwnctzmpcxrckonensk.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ud25jdHptcGN4cmNrb25lbnNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwOTg4MzcsImV4cCI6MjEwNzY3NDgzN30.DUjcY1x4z4K2v9hjoFODdPjzmAFLxR0mbqhfFHKHJks'; // clave pública (anon) del proyecto: la seguridad la dan el token del enlace y las reglas del servidor
+const $ = id => document.getElementById(id);
+const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+const token = hash.get('type') === 'recovery' ? hash.get('access_token') : null;
+history.replaceState(null, '', location.pathname); // el token no se queda en el historial
+function invalid() {
+  $('title').textContent = 'Este enlace ya no sirve';
+  $('sub').textContent = 'El enlace caducó o ya se usó. Vuelve a la app, toca «¿Olvidaste tu contraseña?» y pide uno nuevo.';
+  $('form').hidden = true;
+}
+if (!token) invalid();
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault(); $('error').textContent = '';
+  const a = $('pw').value, b = $('pw2').value;
+  if (a.length < 8) { $('error').textContent = 'Usa al menos 8 caracteres.'; return; }
+  if (a !== b) { $('error').textContent = 'Las contraseñas no coinciden.'; return; }
+  $('go').disabled = true; $('go').textContent = 'Guardando…';
+  try {
+    const r = await fetch(SUPABASE_URL + '/auth/v1/user', { method: 'PUT',
+      headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ password: a }) });
+    if (r.ok) {
+      $('form').hidden = true; $('title').textContent = 'Contraseña actualizada'; $('sub').textContent = '';
+      $('done').hidden = false; $('done').textContent = 'Listo. Vuelve a la app de Meridad e inicia sesión con tu contraseña nueva.';
+    } else {
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401 || r.status === 403) { invalid(); }
+      else if ((j.error_code || '') === 'weak_password') { $('error').textContent = 'La contraseña es demasiado débil. Prueba con una más larga.'; }
+      else if ((j.error_code || '') === 'same_password') { $('error').textContent = 'Elige una contraseña distinta a la anterior.'; }
+      else { $('error').textContent = 'No se pudo guardar. Inténtalo de nuevo en un momento.'; }
+      $('go').disabled = false; $('go').textContent = 'Guardar contraseña';
+    }
+  } catch (_) { $('error').textContent = 'Sin conexión. Revisa tu red e inténtalo de nuevo.'; $('go').disabled = false; $('go').textContent = 'Guardar contraseña'; }
+});
+</script></body></html>
