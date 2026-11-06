@@ -83,6 +83,50 @@ function gate(msg) {
   document.getElementById('g').onclick = signIn;
 }
 
+// Verificación en dos pasos (TOTP): sin el código de 6 dígitos de una app de autenticación, el servidor no entrega datos.
+const authAPI = (path, opts = {}) => fetch(SUPABASE_URL + '/auth/v1' + path,
+  { ...opts, headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + sess.get('at'), 'content-type': 'application/json' } });
+async function mfa() {
+  const r = await authAPI('/user');
+  if (!r.ok) return gate('Tu sesión terminó. Vuelve a entrar.');
+  const factors = ((await r.json()).factors || []).filter(f => f.factor_type === 'totp');
+  const ready = factors.find(f => f.status === 'verified');
+  if (ready) return codeForm(ready.id, null);
+  // Un intento anterior sin terminar se descarta y se empieza de nuevo.
+  for (const f of factors) await authAPI('/factors/' + f.id, { method: 'DELETE' });
+  const e = await authAPI('/factors', { method: 'POST', body: JSON.stringify({ factor_type: 'totp', friendly_name: 'Panel Meridad', issuer: 'Meridad' }) });
+  if (!e.ok) return gate('No se pudo preparar la verificación en dos pasos. Inténtalo de nuevo.');
+  const j = await e.json();
+  codeForm(j.id, j.totp);
+}
+function codeForm(factorId, totp) {
+  $app.innerHTML = `<div class="card center"><img class="logo" src="/assets/logo.png" alt="Meridad">
+    <h1>${totp ? 'Activa la verificación en dos pasos' : 'Código de verificación'}</h1>
+    ${totp ? `<p class="muted">Solo la primera vez. Abre una app de autenticación (Google Authenticator, Microsoft Authenticator, Authy o la de Contraseñas del iPhone) y escanea este código.</p>
+      <img src="${esc(totp.qr_code.startsWith('data:') ? totp.qr_code : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(totp.qr_code))}" alt="Código QR para la app de autenticación" style="width:200px;height:200px;background:#fff;border-radius:12px;padding:8px;margin:8px auto;display:block">
+      <p class="note">¿No puedes escanearlo? Escribe esta clave en la app:<br><code style="user-select:all;word-break:break-all">${esc(totp.secret)}</code></p>`
+      : '<p class="muted">Escribe el código de 6 dígitos que muestra tu app de autenticación.</p>'}
+    <form id="f"><label for="code">Código de 6 dígitos</label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+      <p class="err" id="err" role="alert"></p><button id="go" type="submit">Verificar</button></form>
+    <footer><a href="#" id="other">Entrar con otra cuenta</a></footer></div>`;
+  const code = document.getElementById('code'); code.focus();
+  document.getElementById('other').onclick = e => { e.preventDefault(); signOut(); };
+  document.getElementById('f').onsubmit = async e => {
+    e.preventDefault();
+    const go = document.getElementById('go'), err = document.getElementById('err');
+    go.disabled = true; err.textContent = '';
+    try {
+      const c = await authAPI(`/factors/${factorId}/challenge`, { method: 'POST', body: '{}' });
+      if (!c.ok) throw new Error('challenge');
+      const v = await authAPI(`/factors/${factorId}/verify`, { method: 'POST', body: JSON.stringify({ challenge_id: (await c.json()).id, code: code.value.trim() }) });
+      if (!v.ok) { err.textContent = 'Código incorrecto o vencido. Escribe el que aparece ahora.'; go.disabled = false; code.select(); return; }
+      const j = await v.json(); sess.set('at', j.access_token); sess.set('rt', j.refresh_token);
+      load();
+    } catch (_) { err.textContent = 'No se pudo verificar. Revisa tu conexión.'; go.disabled = false; }
+  };
+}
+
 let state = { days: store.get('days', 30), sort: store.get('sort', ['last_seen', -1]), q: '', data: null,
   price: store.get('price', 9.99), fee: store.get('fee', 15), user: null, detail: null };
 
@@ -95,7 +139,11 @@ async function load(retry = true) {
   catch (_) { return gate('Sin conexión. Revisa tu red e inténtalo de nuevo.'); }
   if (r.status === 401 && retry && await refresh()) return load(false);
   if (r.status === 401) return gate('Tu sesión terminó. Vuelve a entrar.');
-  if (r.status === 403) { sess.set('at', null); sess.set('rt', null); return gate('Esta cuenta no tiene acceso al panel.'); }
+  if (r.status === 403) {
+    const j = await r.json().catch(() => ({}));
+    if (j.error?.type === 'mfa_required') return mfa();
+    sess.set('at', null); sess.set('rt', null); return gate('Esta cuenta no tiene acceso al panel.');
+  }
   if (!r.ok) return gate('No se pudo leer el panel. Inténtalo en un momento.');
   if (r.status === 404 && state.user) { state.user = null; return load(); }
   if (state.user) { state.detail = await r.json(); return renderUser(); }
