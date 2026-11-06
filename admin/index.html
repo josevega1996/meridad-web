@@ -1,0 +1,201 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="/assets/favicon.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;600;700;800&display=swap"><link rel="stylesheet" href="/assets/style.css"><title>Panel · Meridad</title>
+<style>
+body{display:block;padding:0}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:18px}
+.top .logo{width:40px;height:40px}
+.top h1{font-size:24px;margin:0;flex:1 1 auto}
+.top select,.top .btn{min-height:40px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:700 14px var(--sans);padding:0 12px;cursor:pointer;width:auto;margin:0}
+.top .btn.primary{background:var(--salvia);color:var(--on);border-color:var(--salvia)}
+.stamp{font-size:12.5px;color:var(--muted);width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(160px,calc(50% - 6px)),1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px 16px}
+.kpi .k{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.kpi .v{font:600 28px/1.2 var(--serif);margin-top:4px}
+.kpi .s{font-size:13px;color:var(--muted);margin-top:2px}
+.kpi.good .v{color:var(--salvia)}.kpi.bad .v{color:var(--danger)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:18px}
+.panel h2{margin:0 0 10px;font-size:19px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:18px}
+.two .panel{margin-bottom:0}.panel,.kpi,.two>*{min-width:0}.kpi .v{overflow-wrap:anywhere}.kpi .v small{font:700 14px var(--sans);color:var(--muted)}html,body{overflow-x:hidden}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;cursor:pointer;user-select:none}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.warn td{background:color-mix(in srgb,var(--danger) 9%,transparent)}
+.badge{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:800}
+.b-active{background:color-mix(in srgb,var(--salvia) 18%,transparent);color:var(--salvia)}
+.b-trial{background:var(--tint);color:var(--ink)}
+.b-expired{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger)}
+.alerts li{margin:6px 0}
+.search{width:100%;max-width:320px;min-height:40px;margin:0 0 10px}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{font:11px var(--sans);fill:var(--muted)}
+.settings{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.settings label{margin:0 0 4px}.settings input{min-height:40px;width:130px}
+.center{max-width:440px;margin:12vh auto 0;text-align:center}
+.note{font-size:12.5px;color:var(--muted)}
+</style></head><body>
+<div class="wrap" id="app"></div>
+<script>
+const SUPABASE_URL = 'https://nnwnctzmpcxrckonensk.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ud25jdHptcGN4cmNrb25lbnNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwOTg4MzcsImV4cCI6MjEwNzY3NDgzN30.DUjcY1x4z4K2v9hjoFODdPjzmAFLxR0mbqhfFHKHJks'; // clave pública (anon): la seguridad la da la función del servidor, que solo responde a los correos de administración
+const REDIRECT = location.origin + '/admin/';
+const $app = document.getElementById('app');
+const FEATURES = { tutor: 'Tutor', quizGeneration: 'Crear quiz', quizGrading: 'Corregir quiz', cardProposal: 'Tarjetas',
+  transcription: 'Transcribir escritura', queryExpansion: 'Búsqueda (ampliar)', rerank: 'Búsqueda (ordenar)', studyExtraction: 'Textos de estudio',
+  photoText: 'Foto a texto', actions: 'Acciones', learnerReport: 'Perfil del estudiante', attentive: 'Tutor atento', drawing: 'Dibujos',
+  lab: 'Laboratorio', unknown: 'Sin dato (versión 1.0)' };
+const STATUS = { active: 'Suscrito', trial: 'Prueba', expired: 'Vencido' };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const usd = n => { n = Number(n || 0); return '$' + (n < 1 && n > 0 ? n.toFixed(4) : n.toFixed(2)); };
+const int = n => Number(n || 0).toLocaleString('es');
+const date = s => s ? new Date(s).toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+function ago(s) {
+  if (!s) return 'nunca';
+  const m = (Date.now() - new Date(s)) / 60000;
+  if (m < 2) return 'ahora'; if (m < 60) return `hace ${Math.round(m)} min`;
+  if (m < 1440) return `hace ${Math.round(m / 60)} h`; return `hace ${Math.round(m / 1440)} d`;
+}
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (_) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} } };
+const sess = { get(k) { try { return sessionStorage.getItem(k); } catch (_) { return null; } }, set(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (_) {} } };
+
+// Sesión: Google por Supabase; el token vuelve en el fragmento de la URL y se guarda solo en esta pestaña.
+const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+if (hash.get('access_token')) { sess.set('at', hash.get('access_token')); sess.set('rt', hash.get('refresh_token')); }
+if (location.hash) history.replaceState(null, '', location.pathname);
+
+function signIn() { location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(REDIRECT)}`; }
+function signOut() { sess.set('at', null); sess.set('rt', null); gate('Sesión cerrada.'); }
+async function refresh() {
+  const rt = sess.get('rt'); if (!rt) return false;
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: 'POST', headers: { apikey: ANON_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ refresh_token: rt }) });
+  if (!r.ok) return false;
+  const j = await r.json(); sess.set('at', j.access_token); sess.set('rt', j.refresh_token); return true;
+}
+function gate(msg) {
+  $app.innerHTML = `<div class="card center"><img class="logo" src="/assets/logo.png" alt="Meridad"><h1>Panel de Meridad</h1>
+    <p class="muted">${esc(msg || 'Solo para la cuenta de administración.')}</p><button id="g">Entrar con Google</button></div>`;
+  document.getElementById('g').onclick = signIn;
+}
+
+let state = { days: store.get('days', 30), sort: store.get('sort', ['last_seen', -1]), q: '', data: null,
+  price: store.get('price', 9.99), fee: store.get('fee', 15) };
+
+async function load(retry = true) {
+  if (!sess.get('at')) return gate();
+  $app.querySelector('#stamp')?.replaceChildren('Cargando…');
+  let r;
+  try { r = await fetch(`${SUPABASE_URL}/functions/v1/admin-stats?days=${state.days}`, { headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + sess.get('at') } }); }
+  catch (_) { return gate('Sin conexión. Revisa tu red e inténtalo de nuevo.'); }
+  if (r.status === 401 && retry && await refresh()) return load(false);
+  if (r.status === 401) return gate('Tu sesión terminó. Vuelve a entrar.');
+  if (r.status === 403) { sess.set('at', null); sess.set('rt', null); return gate('Esta cuenta no tiene acceso al panel.'); }
+  if (!r.ok) return gate('No se pudo leer el panel. Inténtalo en un momento.');
+  state.data = await r.json(); render();
+}
+
+function bars(series, key, fmt, color) {
+  const w = 720, h = 170, pad = 26, n = series.length || 1, bw = (w - pad) / n;
+  const max = Math.max(...series.map(d => Number(d[key])), key === 'cost' ? 0.01 : 1);
+  const rects = series.map((d, i) => { const v = Number(d[key]); const bh = (h - 30) * v / max;
+    return `<rect x="${pad + i * bw + 1}" y="${h - 18 - bh}" width="${Math.max(bw - 2, 1)}" height="${bh}" rx="2" fill="${color}"><title>${esc(d.day)}: ${fmt(v)}</title></rect>`; }).join('');
+  const labels = series.filter((_, i) => i % Math.ceil(n / 6) === 0).map(d => { const i = series.indexOf(d);
+    return `<text x="${pad + i * bw}" y="${h - 4}">${new Date(d.day + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}</text>`; }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" role="img"><text x="0" y="12">${fmt(max)}</text><line x1="${pad}" x2="${w}" y1="${h - 18}" y2="${h - 18}" stroke="var(--border)"/>${rects}${labels}</svg>`;
+}
+
+function render() {
+  const d = state.data, o = d.overview, days = d.days;
+  const net = state.price * (1 - state.fee / 100);
+  const revenue = o.subscribed * net; // al mes
+  const cost30 = Number(o.cost_period) * 30 / days; // proyección a 30 días
+  const margin = revenue - cost30;
+  const perUser30 = u => Number(u.period_cost) * 30 / days;
+  const soon = Date.now() + 2 * 864e5;
+  const alerts = [
+    ...d.users.filter(u => u.daily_cost_usd && Number(u.today_cost) >= 0.8 * Number(u.daily_cost_usd))
+      .map(u => `<b>${esc(u.email)}</b> usó hoy ${usd(u.today_cost)} de su tope de ${usd(u.daily_cost_usd)}.`),
+    ...d.users.filter(u => u.status === 'active' && perUser30(u) > net)
+      .map(u => `<b>${esc(u.email)}</b> cuesta ~${usd(perUser30(u))}/mes y deja ${usd(net)}: <b>pierdes dinero</b> con esta cuenta.`),
+    ...d.users.filter(u => u.status === 'trial' && u.trial_ends_at && new Date(u.trial_ends_at) < soon)
+      .map(u => `La prueba de <b>${esc(u.email)}</b> termina ${date(u.trial_ends_at)} (última conexión ${ago(u.last_seen)}).`),
+  ];
+  d.users.forEach(u => u.cap = u.daily_cost_usd ? Math.round(100 * Number(u.today_cost) / Number(u.daily_cost_usd)) : 0);
+  const q = state.q.toLowerCase();
+  const [sk, sd] = state.sort;
+  const value = (u, k) => { const v = u[k]; if (v == null) return null; if (typeof v === 'number') return v;
+    if (/^-?\d+(\.\d+)?$/.test(v)) return Number(v); if (/^\d{4}-\d{2}-\d{2}/.test(v)) return Date.parse(v); return String(v).toLowerCase(); };
+  const users = d.users.filter(u => !q || (u.email || '').toLowerCase().includes(q)).sort((a, b) => {
+    const x = value(a, sk), y = value(b, sk);
+    if (x == null || y == null) return (x == null) - (y == null); // sin dato, al final
+    return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y))) * sd;
+  });
+  const cols = [['email', 'Correo'], ['created_at', 'Alta'], ['status', 'Estado'], ['trial_ends_at', 'Prueba / renueva'], ['last_seen', 'Última conexión'],
+    ['today_calls', 'Llamadas hoy', 1], ['today_cost', 'USD hoy', 1], ['cap', '% tope hoy', 1], ['period_calls', `Llamadas ${days} d`, 1],
+    ['period_tokens', `Tokens ${days} d`, 1], ['period_images', `Dibujos ${days} d`, 1], ['period_cost', `USD ${days} d`, 1], ['total_cost', 'USD total', 1]];
+  const kpi = (k, v, s = '', cls = '') => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $app.innerHTML = `
+  <div class="top"><img class="logo" src="/assets/logo.png" alt=""><h1>Panel de Meridad</h1>
+    <select id="days" aria-label="Periodo">${[7, 30, 90].map(n => `<option value="${n}" ${n === days ? 'selected' : ''}>Últimos ${n} días</option>`).join('')}</select>
+    <button class="btn primary" id="reload">Actualizar</button><button class="btn" id="csv">Exportar CSV</button><button class="btn" id="out">Salir</button>
+    <div class="stamp" id="stamp">Actualizado ${new Date(d.generated_at).toLocaleString('es')} · hora local</div></div>
+  <div class="grid">
+    ${kpi('Usuarios', int(o.users), `+${int(o.new_7)} en 7 días · +${int(o.new_30)} en 30`)}
+    ${kpi('Activos', `${int(o.active_1)} / ${int(o.active_7)} / ${int(o.active_30)}`, 'hoy / 7 días / 30 días')}
+    ${kpi('Planes', `${int(o.subscribed)} · ${int(o.trial)} · ${int(o.expired)}`, 'suscritos · en prueba · vencidos')}
+    ${kpi('Conversión', o.users ? Math.round(100 * o.ever_subscribed / o.users) + '%' : '—', `${int(o.ever_subscribed)} han pagado alguna vez`)}
+    ${kpi('Gasto IA hoy', usd(o.cost_today), `7 días: ${usd(o.cost_7)}`)}
+    ${kpi(`Gasto IA ${days} días`, usd(o.cost_period), `≈ ${usd(cost30)} al mes · total ${usd(o.cost_total)}`)}
+    ${kpi('Ingreso estimado', usd(revenue) + '<small>/mes</small>', `${int(o.subscribed)} × ${usd(net)} neto`)}
+    ${kpi('Margen estimado', usd(margin) + '<small>/mes</small>', 'ingreso − gasto proyectado', margin >= 0 ? 'good' : 'bad')}
+  </div>
+  ${alerts.length ? `<div class="panel"><h2>Alertas</h2><ul class="alerts">${alerts.map(a => `<li>${a}</li>`).join('')}</ul></div>` : ''}
+  <div class="two">
+    <div class="panel chart"><h2>Gasto diario de IA (USD)</h2>${bars(d.series, 'cost', usd, 'var(--salvia)')}</div>
+    <div class="panel chart"><h2>Usuarios que usaron la IA por día</h2>${bars(d.series, 'active', int, 'var(--strong)')}</div>
+  </div><div style="height:18px"></div>
+  <div class="two">
+    <div class="panel"><h2>Por función (${days} días)</h2><div class="scroll"><table><thead><tr><th>Función</th><th class="num">Llamadas</th><th class="num">USD</th></tr></thead><tbody>
+      ${d.features.map(f => `<tr><td>${esc(FEATURES[f.feature] || f.feature)}</td><td class="num">${int(f.calls)}</td><td class="num">${usd(f.cost)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Sin uso</td></tr>'}
+    </tbody></table></div></div>
+    <div class="panel"><h2>Por modelo (${days} días)</h2><div class="scroll"><table><thead><tr><th>Modelo</th><th class="num">Llamadas</th><th class="num">Tokens</th><th class="num">USD</th></tr></thead><tbody>
+      ${d.models.map(m => `<tr><td>${esc(m.model)}</td><td class="num">${int(m.calls)}</td><td class="num">${int(m.tokens)}</td><td class="num">${usd(m.cost)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Sin uso</td></tr>'}
+    </tbody></table></div></div>
+  </div><div style="height:18px"></div>
+  <div class="panel"><h2>Usuarios</h2>
+    <input class="search" id="q" placeholder="Buscar por correo" value="${esc(state.q)}">
+    <div class="scroll"><table><thead><tr>${cols.map(([k, t, n]) => `<th data-k="${k}" class="${n ? 'num' : ''}">${t}${k === sk ? (sd > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>
+    ${users.map(u => `<tr class="${u.cap >= 80 || (u.status === 'active' && perUser30(u) > net) ? 'warn' : ''}">
+      <td>${esc(u.email)}${u.account === 'blocked' ? ' <span class="badge b-expired">bloqueada</span>' : ''}</td><td>${date(u.created_at)}</td>
+      <td><span class="badge b-${esc(u.status)}">${STATUS[u.status] || esc(u.status)}</span></td>
+      <td>${u.status === 'active' ? (u.renews_at ? 'renueva ' + date(u.renews_at) : '—') : u.status === 'trial' ? 'termina ' + date(u.trial_ends_at) : '—'}</td>
+      <td title="${esc(u.last_seen)}">${ago(u.last_seen)}</td>
+      <td class="num">${int(u.today_calls)}</td><td class="num">${usd(u.today_cost)}</td><td class="num">${u.cap}%</td>
+      <td class="num">${int(u.period_calls)}</td><td class="num">${int(u.period_tokens)}</td><td class="num">${int(u.period_images)}</td>
+      <td class="num">${usd(u.period_cost)}</td><td class="num">${usd(u.total_cost)}</td></tr>`).join('')}
+    </tbody></table></div></div>
+  <div class="panel"><h2>Supuestos del cálculo</h2><div class="settings">
+    <div><label for="price">Precio mensual (USD)</label><input id="price" type="number" step="0.01" min="0" value="${state.price}"></div>
+    <div><label for="fee">Comisión de Apple (%)</label><input id="fee" type="number" step="1" min="0" max="50" value="${state.fee}"></div>
+  </div><p class="note">El ingreso es una estimación: suscritos activos × precio neto. Apple cobra 15 % en el Small Business Program (30 % si no estás inscrito). «Última conexión» es lo más reciente entre el inicio de sesión, la renovación de la sesión al abrir la app y la última llamada de IA. Solo metadatos: el panel nunca ve notas. Las cuentas borradas desaparecen con su historial de uso.</p></div>`;
+  const el = id => document.getElementById(id);
+  el('days').onchange = e => { state.days = Number(e.target.value); store.set('days', state.days); load(); };
+  el('reload').onclick = () => load();
+  el('out').onclick = signOut;
+  el('csv').onclick = () => {
+    const keys = ['email', 'created_at', 'status', 'trial_ends_at', 'renews_at', 'last_seen', 'today_calls', 'today_cost', 'period_calls', 'period_tokens', 'period_images', 'period_cost', 'total_calls', 'total_tokens', 'total_images', 'total_cost'];
+    const csv = [keys.join(','), ...d.users.map(u => keys.map(k => `"${String(u[k] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `meridad-usuarios-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  };
+  el('q').oninput = e => { state.q = e.target.value; render(); const i = el('q'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); };
+  document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
+    const k = th.dataset.k; state.sort = [k, state.sort[0] === k ? -state.sort[1] : -1]; store.set('sort', state.sort); render(); });
+  ['price', 'fee'].forEach(id => el(id).onchange = e => { state[id] = Number(e.target.value) || 0; store.set(id, state[id]); render(); });
+}
+
+load();
+setInterval(() => { if (state.data && document.visibilityState === 'visible') load(); }, 5 * 60 * 1000);
+</script></body></html>
