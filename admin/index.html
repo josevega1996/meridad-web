@@ -36,6 +36,9 @@ tr.warn td{background:color-mix(in srgb,var(--danger) 9%,transparent)}
 .settings label{margin:0 0 4px}.settings input{min-height:40px;width:130px}
 .center{max-width:440px;margin:12vh auto 0;text-align:center}
 .note{font-size:12.5px;color:var(--muted)}
+tbody tr.link{cursor:pointer}tbody tr.link:hover td{background:var(--tint)}
+.back{background:none;border:0;color:var(--salvia);font:800 15px var(--sans);padding:0;width:auto;min-height:40px;margin:0;cursor:pointer}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:4px 0 16px}.who h2{margin:0;font-size:22px;overflow-wrap:anywhere}
 </style></head><body>
 <div class="wrap" id="app"></div>
 <script>
@@ -81,18 +84,21 @@ function gate(msg) {
 }
 
 let state = { days: store.get('days', 30), sort: store.get('sort', ['last_seen', -1]), q: '', data: null,
-  price: store.get('price', 9.99), fee: store.get('fee', 15) };
+  price: store.get('price', 9.99), fee: store.get('fee', 15), user: null, detail: null };
 
 async function load(retry = true) {
   if (!sess.get('at')) return gate();
   $app.querySelector('#stamp')?.replaceChildren('Cargando…');
   let r;
-  try { r = await fetch(`${SUPABASE_URL}/functions/v1/admin-stats?days=${state.days}`, { headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + sess.get('at') } }); }
+  const extra = state.user ? `&user=${state.user}` : '';
+  try { r = await fetch(`${SUPABASE_URL}/functions/v1/admin-stats?days=${state.days}${extra}`, { headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + sess.get('at') } }); }
   catch (_) { return gate('Sin conexión. Revisa tu red e inténtalo de nuevo.'); }
   if (r.status === 401 && retry && await refresh()) return load(false);
   if (r.status === 401) return gate('Tu sesión terminó. Vuelve a entrar.');
   if (r.status === 403) { sess.set('at', null); sess.set('rt', null); return gate('Esta cuenta no tiene acceso al panel.'); }
   if (!r.ok) return gate('No se pudo leer el panel. Inténtalo en un momento.');
+  if (r.status === 404 && state.user) { state.user = null; return load(); }
+  if (state.user) { state.detail = await r.json(); return renderUser(); }
   state.data = await r.json(); render();
 }
 
@@ -167,7 +173,7 @@ function render() {
   <div class="panel"><h2>Usuarios</h2>
     <input class="search" id="q" placeholder="Buscar por correo" value="${esc(state.q)}">
     <div class="scroll"><table><thead><tr>${cols.map(([k, t, n]) => `<th data-k="${k}" class="${n ? 'num' : ''}">${t}${k === sk ? (sd > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>
-    ${users.map(u => `<tr class="${u.cap >= 80 || (u.status === 'active' && perUser30(u) > net) ? 'warn' : ''}">
+    ${users.map(u => `<tr data-u="${esc(u.id)}" title="Ver el detalle" class="link ${u.cap >= 80 || (u.status === 'active' && perUser30(u) > net) ? 'warn' : ''}">
       <td>${esc(u.email)}${u.account === 'blocked' ? ' <span class="badge b-expired">bloqueada</span>' : ''}</td><td>${date(u.created_at)}</td>
       <td><span class="badge b-${esc(u.status)}">${STATUS[u.status] || esc(u.status)}</span></td>
       <td>${u.status === 'active' ? (u.renews_at ? 'renueva ' + date(u.renews_at) : '—') : u.status === 'trial' ? 'termina ' + date(u.trial_ends_at) : '—'}</td>
@@ -194,8 +200,68 @@ function render() {
   document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
     const k = th.dataset.k; state.sort = [k, state.sort[0] === k ? -state.sort[1] : -1]; store.set('sort', state.sort); render(); });
   ['price', 'fee'].forEach(id => el(id).onchange = e => { state[id] = Number(e.target.value) || 0; store.set(id, state[id]); render(); });
+  document.querySelectorAll('tr[data-u]').forEach(tr => tr.onclick = () => openUser(tr.dataset.u));
+}
+
+function openUser(id) { state.user = id; state.detail = null; scrollTo(0, 0); load(); }
+function closeUser() { state.user = null; state.detail = null; render(); scrollTo(0, 0); }
+
+// Ficha de un usuario: todo su gasto (solo metadatos; nunca el contenido de lo que preguntó).
+function renderUser() {
+  const u = state.data?.users.find(x => x.id === state.user) || {}, d = state.detail, days = d.days;
+  const net = state.price * (1 - state.fee / 100);
+  const sum = k => d.series.reduce((a, x) => a + Number(x[k] || 0), 0);
+  const cost = sum('cost'), cost30 = cost * 30 / days;
+  const kpi = (k, v, s = '', cls = '') => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const balance = u.status === 'active' ? net - cost30 : null;
+  const cap = u.daily_cost_usd ? Math.round(100 * Number(u.today_cost) / Number(u.daily_cost_usd)) : 0;
+  const when = s => new Date(s).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  $app.innerHTML = `
+  <div class="top"><img class="logo" src="/assets/logo.png" alt=""><h1>Panel de Meridad</h1>
+    <select id="days" aria-label="Periodo">${[7, 30, 90].map(n => `<option value="${n}" ${n === days ? 'selected' : ''}>Últimos ${n} días</option>`).join('')}</select>
+    <button class="btn primary" id="reload">Actualizar</button><button class="btn" id="csv">Exportar llamadas</button><button class="btn" id="out">Salir</button></div>
+  <button class="back" id="back">← Todos los usuarios</button>
+  <div class="who"><h2>${esc(u.email || state.user)}</h2><span class="badge b-${esc(u.status)}">${STATUS[u.status] || esc(u.status || '')}</span>
+    <span class="note">Alta ${date(u.created_at)} · ${u.status === 'active' ? (u.renews_at ? 'renueva ' + date(u.renews_at) : 'suscrito') : u.status === 'trial' ? 'prueba hasta ' + date(u.trial_ends_at) : 'sin plan'} · última conexión ${ago(u.last_seen)}</span></div>
+  <div class="grid">
+    ${kpi(`Gasto ${days} días`, usd(cost), `≈ ${usd(cost30)} al mes`)}
+    ${kpi('Gasto total', usd(u.total_cost), `${int(u.total_calls)} llamadas · ${int(u.total_images)} dibujos`)}
+    ${kpi(`Llamadas ${days} días`, int(sum('calls')), `${int(sum('tokens'))} tokens`)}
+    ${kpi(`Dibujos ${days} días`, int(sum('images')))}
+    ${kpi('Hoy', usd(u.today_cost), `${cap}% de su tope de ${usd(u.daily_cost_usd)}`, cap >= 80 ? 'bad' : '')}
+    ${balance === null ? kpi('Balance', '—', 'no paga (prueba o vencido)') : kpi('Balance', usd(balance) + '<small>/mes</small>', `paga ${usd(net)} neto − gasta ~${usd(cost30)}`, balance >= 0 ? 'good' : 'bad')}
+  </div>
+  <div class="two">
+    <div class="panel chart"><h2>Gasto por día (USD)</h2>${bars(d.series, 'cost', usd, 'var(--salvia)')}</div>
+    <div class="panel chart"><h2>Llamadas por día</h2>${bars(d.series, 'calls', int, 'var(--strong)')}</div>
+  </div><div style="height:18px"></div>
+  <div class="two">
+    <div class="panel"><h2>Por función (${days} días)</h2><div class="scroll"><table><thead><tr><th>Función</th><th class="num">Llamadas</th><th class="num">Tokens</th><th class="num">USD</th></tr></thead><tbody>
+      ${d.features.map(f => `<tr><td>${esc(FEATURES[f.feature] || f.feature)}</td><td class="num">${int(f.calls)}</td><td class="num">${int(f.tokens)}</td><td class="num">${usd(f.cost)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Sin uso</td></tr>'}
+    </tbody></table></div></div>
+    <div class="panel"><h2>Por modelo (${days} días)</h2><div class="scroll"><table><thead><tr><th>Modelo</th><th class="num">Llamadas</th><th class="num">Tokens</th><th class="num">USD</th></tr></thead><tbody>
+      ${d.models.map(m => `<tr><td>${esc(m.model)}</td><td class="num">${int(m.calls)}</td><td class="num">${int(m.tokens)}</td><td class="num">${usd(m.cost)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Sin uso</td></tr>'}
+    </tbody></table></div></div>
+  </div><div style="height:18px"></div>
+  <div class="panel"><h2>Últimas llamadas</h2><p class="note">Las ${d.events.length} más recientes (hasta 200). Solo metadatos: no se guarda qué preguntó ni qué respondió la IA.</p>
+    <div class="scroll"><table><thead><tr><th>Fecha</th><th>Función</th><th>Modelo</th><th class="num">Entrada</th><th class="num">Salida</th><th class="num">Caché</th><th class="num">Búsquedas</th><th class="num">USD</th></tr></thead><tbody>
+    ${d.events.map(e => `<tr><td>${when(e.created_at)}</td><td>${e.kind === 'image' ? 'Dibujo (imagen)' : e.feature === 'drawing' ? 'Dibujo (preparar y nombres)' : esc(FEATURES[e.feature] || e.feature)}</td><td>${esc(e.model)}</td>
+      <td class="num">${int(e.input_tokens)}</td><td class="num">${int(e.output_tokens)}</td><td class="num">${int(Number(e.cache_read_tokens) + Number(e.cache_write_tokens))}</td>
+      <td class="num">${int(e.web_searches)}</td><td class="num">${usd(e.cost)}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">Sin llamadas</td></tr>'}
+    </tbody></table></div></div>`;
+  const el = id => document.getElementById(id);
+  el('back').onclick = closeUser;
+  el('days').onchange = e => { state.days = Number(e.target.value); store.set('days', state.days); load(); };
+  el('reload').onclick = () => load();
+  el('out').onclick = signOut;
+  el('csv').onclick = () => {
+    const keys = ['created_at', 'feature', 'model', 'kind', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'web_searches', 'cost'];
+    const csv = [keys.join(','), ...d.events.map(e => keys.map(k => `"${String(e[k] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `meridad-llamadas-${(u.email || 'usuario').replace(/[^a-z0-9]+/gi, '-')}.csv`; a.click();
+  };
 }
 
 load();
-setInterval(() => { if (state.data && document.visibilityState === 'visible') load(); }, 5 * 60 * 1000);
+setInterval(() => { if ((state.data || state.detail) && document.visibilityState === 'visible') load(); }, 5 * 60 * 1000);
 </script></body></html>
