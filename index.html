@@ -59,7 +59,7 @@
       </div>
       <div class="stage">
         <div class="ipad"><img src="/assets/03-tutor.webp" alt="Meridad en un iPad: una página sobre la célula y el panel del tutor abierto" width="1100" height="1467" fetchpriority="high"></div>
-        <p class="bubble" id="bubble" aria-live="polite">¿Qué quieres aprender hoy?</p>
+        <p class="bubble" id="bubble" aria-live="polite">«La sabiduría es hija de la experiencia.»<cite>Leonardo da Vinci</cite></p>
         <img class="leo" src="/assets/leonardo.webp" alt="Leonardo, el avatar del tutor de Meridad" width="560" height="855">
       </div>
     </div>
@@ -92,21 +92,24 @@
     <div class="wrap">
       <div class="avatars" aria-label="Avatares del tutor">
         <div class="avatar current"><img src="/assets/leonardo.webp" alt="Leonardo" width="560" height="855" loading="lazy"><b>Leonardo</b><span>Disponible</span></div>
-        <div class="avatar soon" aria-hidden="true"><i>?</i><b>Tu avatar</b><span>Muy pronto</span></div>
-        <div class="avatar soon" aria-hidden="true"><i>?</i><b>Tu avatar</b><span>Muy pronto</span></div>
-        <div class="avatar soon" aria-hidden="true"><i>?</i><b>Tu avatar</b><span>Muy pronto</span></div>
+        <div class="avatar soon">
+          <div class="faces" aria-hidden="true"><i></i><i></i><i></i></div>
+          <b>Tu propio avatar</b>
+          <p>Muy pronto podrás personalizar el avatar de tu tutor a tu gusto.</p>
+          <span>Próxima actualización</span>
+        </div>
       </div>
       <div>
         <p class="eyebrow">Tu tutor</p>
         <h2>Un tutor que te enseña en vez de hacerte la tarea</h2>
-        <p class="lead">Te guía con preguntas, te da pistas y te explica con calma. Lo ves en pantalla como un avatar que habla contigo: hoy te acompaña Leonardo, y muy pronto podrás elegir y personalizar el tuyo.</p>
+        <p class="lead">Te guía con preguntas, te da pistas y te explica con calma. Lo ves en pantalla como un avatar que habla contigo: hoy te acompaña Leonardo, y muy pronto podrás personalizar el tuyo.</p>
         <ul class="checks">
           <li><div><b>Ve tu página</b><span>Entiende tu letra, tus esquemas y tus PDF.</span></div></li>
           <li><div><b>Quiz y tarjetas</b><span>Crea preguntas a partir de tus apuntes y te corrige.</span></div></li>
           <li><div><b>Conversa en voz alta</b><span>Pregúntale hablando y escucha su respuesta con voz natural.</span></div></li>
           <li><div><b>Dibuja para explicarte</b><span>Pídele un dibujo y lo pegas en tu cuaderno.</span></div></li>
           <li><div><b>Propone, tú decides</b><span>Sugiere eventos y recordatorios, pero nada se crea sin tu «Crear».</span></div></li>
-          <li><div><b>Tu avatar, a tu manera</b><span>Muy pronto: elige y personaliza el avatar de tu tutor.</span></div></li>
+          <li><div><b>Tu avatar, a tu manera</b><span>Muy pronto: personaliza el avatar de tu tutor.</span></div></li>
         </ul>
       </div>
     </div>
@@ -237,18 +240,27 @@
   const top_ = document.getElementById('top');
   addEventListener('scroll', () => top_.classList.toggle('scrolled', scrollY > 8), { passive: true });
 
-  // Mensajes de la burbuja: saludo y una cita de Leonardo da Vinci (Códice Forster III)
+  // Citas de la burbuja, con fuente verificable:
+  // Leonardo (Códice Forster III y Códice Atlántico), Aristóteles (según Diógenes Laercio, V.18),
+  // Sor Juana (Respuesta a sor Filotea, 1691), Mandela (discurso de 2003)
   const bubble = document.getElementById('bubble');
-  const lines = [
-    '¿Qué quieres aprender hoy?',
-    '«La sabiduría es hija de la experiencia.»<cite>Leonardo da Vinci</cite>'
+  const quotes = [
+    ['La sabiduría es hija de la experiencia.', 'Leonardo da Vinci'],
+    ['Así como el hierro se oxida sin uso, el ingenio sin ejercicio se echa a perder.', 'Leonardo da Vinci'],
+    ['La raíz de la educación es amarga, pero su fruto es dulce.', 'Aristóteles'],
+    ['Estudio por ver si con estudiar ignoro menos.', 'Sor Juana Inés de la Cruz'],
+    ['La educación es el arma más poderosa que puedes usar para cambiar el mundo.', 'Nelson Mandela']
   ];
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
     let i = 0;
     setInterval(() => {
       bubble.classList.add('out');
-      setTimeout(() => { i = (i + 1) % lines.length; bubble.innerHTML = lines[i]; bubble.classList.remove('out'); }, 350);
-    }, 5000);
+      setTimeout(() => {
+        i = (i + 1) % quotes.length;
+        bubble.innerHTML = `«${quotes[i][0]}»<cite>${quotes[i][1]}</cite>`;
+        bubble.classList.remove('out');
+      }, 350);
+    }, 6500);
   }
 </script>
 </body>

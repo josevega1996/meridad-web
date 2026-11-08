@@ -163,14 +163,21 @@ footer a:hover{color:var(--ink)}
 .bubble.out{opacity:0;transform:translateY(4px)}
 .bubble cite{display:block;margin-top:6px;font-style:normal;font-weight:700;font-size:12.5px;color:var(--muted)}
 
-/* Selector de avatares (Leonardo hoy, más muy pronto) */
-.avatars{display:grid;grid-template-columns:1.4fr 1fr;grid-template-rows:repeat(3,1fr);gap:16px}
-.avatar{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px}
-.avatar b{font:600 18px var(--serif)}
+/* Avatares: Leonardo hoy y el avatar propio en la próxima actualización */
+.avatars{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.avatar{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}
+.avatar b{font:600 20px var(--serif)}
 .avatar span{font-size:13px;font-weight:800;color:var(--muted)}
-.avatar.current{grid-row:1 / span 3;border:2px solid var(--salvia);box-shadow:var(--shadow);padding:24px 16px}
-.avatar.current img{width:78%;max-width:260px;margin-bottom:10px;filter:drop-shadow(0 12px 18px rgba(40,30,20,.22))}
+.avatar.current{border:2px solid var(--salvia);box-shadow:var(--shadow)}
+.avatar.current img{width:82%;max-width:240px;margin-bottom:12px;filter:drop-shadow(0 12px 18px rgba(40,30,20,.22))}
 .avatar.current span{color:var(--salvia)}
-.avatar.soon{border-style:dashed;border-color:var(--strong);background:transparent}
-.avatar.soon i{font:600 30px/1 var(--serif);font-style:normal;color:var(--strong);width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--tint);margin-bottom:6px}
-@media (max-width:640px){.avatar.soon i{width:40px;height:40px;font-size:22px}.avatar b{font-size:16px}}
+.avatar.soon{border:1.5px dashed var(--strong);background:transparent}
+.avatar.soon p{color:var(--muted);font-size:15px;margin:4px 0 10px}
+.avatar.soon span{background:var(--salvia-soft);color:var(--salvia);padding:4px 12px;border-radius:999px}
+.faces{display:flex;margin-bottom:16px}
+.faces i{width:64px;height:64px;border-radius:50%;border:3px solid var(--bg);margin-left:-16px;background:var(--tint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238C826F'%3E%3Ccircle cx='12' cy='9' r='4'/%3E%3Cpath d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z'/%3E%3C/svg%3E") center 70%/62% no-repeat}
+.faces i:first-child{margin-left:0;background-color:var(--salvia-soft)}
+.faces i:nth-child(2){background-color:#F3E1C7;transform:translateY(-6px)}
+.faces i:nth-child(3){background-color:#E9DCEB}
+@media (prefers-color-scheme:dark){.faces i:nth-child(2){background-color:#4A3C2A}.faces i:nth-child(3){background-color:#3E3242}}
+@media (max-width:640px){.faces i{width:48px;height:48px}.avatar{padding:20px 14px}.avatar b{font-size:17px}}
