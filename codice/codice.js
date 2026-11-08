@@ -343,6 +343,33 @@ model.traverse((o) => { if (o.material) { o.material.envMapIntensity = 0.9; } })
 leo.add(model);
 leo.position.set(leoBase.x, -H / 2 - 0.12, leoBase.z);
 
+// ---------- Avatares que vienen: siluetas de plano técnico ----------
+const avatars = [];
+{
+  const fill = new THREE.MeshStandardMaterial({ color: 0xcfe3c9, transparent: true, opacity: 0.1, depthWrite: false, roughness: 0.6 });
+  const wire = new THREE.LineBasicMaterial({ color: 0xf08a4b, transparent: true, opacity: 0.55 });
+  const ringM = new THREE.MeshBasicMaterial({ color: 0xf08a4b, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+  const bodyG = new THREE.CapsuleGeometry(0.3, 0.5, 3, 9);
+  const headG = new THREE.SphereGeometry(0.25, 9, 6);
+  const ringG = new THREE.RingGeometry(0.42, 0.45, 48);
+  [[-2.75, 0.3], [-3.75, 0.6], [-4.75, 0.35]].forEach(([x, z]) => {
+    const g = new THREE.Group();
+    const inner = new THREE.Group();
+    const body = new THREE.Mesh(bodyG, fill); body.position.y = 0.58;
+    const head = new THREE.Mesh(headG, fill); head.position.y = 1.3;
+    const bw = new THREE.LineSegments(new THREE.WireframeGeometry(bodyG), wire); bw.position.y = 0.58;
+    const hw = new THREE.LineSegments(new THREE.WireframeGeometry(headG), wire); hw.position.y = 1.3;
+    inner.add(body, head, bw, hw);
+    const ring = new THREE.Mesh(ringG, ringM); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.005;
+    g.add(inner, ring);
+    g.position.set(x, -H / 2 - 0.12, z);
+    g.scale.setScalar(0.88);
+    g.visible = false;
+    rig.add(g);
+    avatars.push({ g, inner, ring });
+  });
+}
+
 // ---------- Estado que anima la línea de tiempo ----------
 const S = {
   desk: 1,                                    // 1 = iPad acostado sobre el escritorio (foto)
@@ -351,6 +378,7 @@ const S = {
   rx: -0.22, ry: -0.42,
   ink: 0, lift: 0, pen: 0,
   leoTurn: 0.4,
+  av: 0, away: 0,                             // escena de avatares (siluetas / iPad que se aparta)
   focus: 0, end: 0,                           // escena de Leonardo / cierre (ajustes en vertical)
 };
 
@@ -377,7 +405,7 @@ addEventListener('pointermove', (e) => { mouse.x = e.clientX / innerWidth * 2 - 
 
 // ---------- Anotaciones ----------
 const annos = [...document.querySelectorAll('[data-anchor]')].map((el) => ({ el, key: el.dataset.anchor, o: 0 }));
-const annoOpacity = { ipad: 0, leoFeet: 0, pencil: 0, nucleus: 0, mito: 0, lift: 0, leoHead: 0 };
+const annoOpacity = { ipad: 0, leoFeet: 0, pencil: 0, nucleus: 0, mito: 0, lift: 0, leoHead: 0, av: 0, leoAv: 0 };
 const v = new THREE.Vector3();
 function anchorWorld(key) {
   switch (key) {
@@ -387,6 +415,8 @@ function anchorWorld(key) {
     case 'nucleus': return v.copy(px(610, 800)).applyMatrix4(inkGroup.matrixWorld);
     case 'mito': return v.copy(px(800, 985)).applyMatrix4(inkGroup.matrixWorld);
     case 'lift': return v.copy(px(560, 400)).applyMatrix4(strokes[0].mesh.matrixWorld);
+    case 'av0': case 'av1': case 'av2': { const a = avatars[+key[2]]; return v.set(0, 1.66, 0).applyMatrix4(a.g.matrixWorld); }
+    case 'leoAv': return v.set(leoBase.x, -H / 2 - 0.12 + LEO_H + 0.05, leoBase.z).applyMatrix4(rig.matrixWorld);
     case 'leoHead': return v.copy(headLocal).add(new THREE.Vector3(0.1, 0.18, 0)).applyMatrix4(rig.matrixWorld);
   }
 }
@@ -434,6 +464,16 @@ showPanel('.p0', 0.85, 0.3);
 tl.fromTo('h1 .ch', { yPercent: 115 }, { yPercent: 0, duration: 0.35, stagger: 0.008, ease: 'expo.out' }, 0.85);
 tl.to(annoOpacity, { ipad: 1, leoFeet: 1, duration: 0.15 }, 1.0);
 
+// 6.8 → 8.3 · tus avatares: Leonardo hoy, el tuyo muy pronto
+tl.to(S, { cx: -1.6, cy: -0.15, cz: 9.2, tx: -1.65, ty: -0.8, tz: 0.4, lift: 0, ry: 0, away: 1, leoTurn: -0.12, focus: 1, duration: 1.0 }, 6.8);
+tl.to(S, { av: 1, duration: 0.9, ease: 'power1.out' }, 7.2);
+showPanel('.pav', 7.25);
+tl.to(annoOpacity, { leoAv: 1, duration: 0.2 }, 7.3);
+tl.to(annoOpacity, { av: 1, duration: 0.2 }, 7.75);
+hidePanel('.pav', 8.35);
+tl.to(annoOpacity, { av: 0, leoAv: 0, duration: 0.2 }, 8.35);
+tl.to({}, { duration: 0.2 }, 8.55);
+
 ScrollTrigger.create({
   trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: reduce ? true : 1.1,
   onUpdate: (st) => tl.progress(st.progress),
@@ -466,7 +506,7 @@ ScrollTrigger.batch('.reveal', {
 // ---------- Cierre: vuelve el 3D y la llamada a descargar ----------
 gsap.fromTo(glFade, { o: 0 }, { o: 1, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '#finale', start: 'top bottom', end: 'top 30%', scrub: true } });
 const tl2 = gsap.timeline({ paused: true, defaults: { ease: 'power2.inOut' } });
-tl2.to(S, { hero: 0, cx: 0, cy: 0.7, cz: 11.6, tx: -0.2, ty: 1.35, tz: 0, rx: -0.12, ry: -0.3, lift: 0, leoTurn: 0.35, focus: 0, end: 1, duration: 1 }, 0)
+tl2.to(S, { hero: 0, cx: 0, cy: 0.7, cz: 11.6, tx: -0.2, ty: 1.35, tz: 0, rx: -0.12, ry: -0.3, lift: 0, leoTurn: 0.35, focus: 0, end: 1, away: 0, av: 0, duration: 1 }, 0)
   .fromTo('.p4', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 0.6);
 ScrollTrigger.create({ trigger: '#finale', start: 'top 70%', end: 'bottom bottom', scrub: reduce ? true : 1, onUpdate: (st) => tl2.progress(st.progress) });
 
@@ -515,6 +555,15 @@ function render() {
   leo.scale.setScalar(Math.max(0.0001, 1 - sm(pull, 0.02, 0.25)));   // aparece al terminar de salir
   leo.rotation.y = S.leoTurn + mouse.sx * 0.45;
   leo.rotation.x = mouse.sy * 0.06;
+  // el iPad se aparta hacia arriba para dejar ver la fila de avatares
+  ipad.position.y += S.away * 4.2;
+  avatars.forEach((a, i) => {
+    const si = sm(S.av, i * 0.18, i * 0.18 + 0.5);
+    a.g.visible = si > 0.001;
+    a.inner.scale.set(1, Math.max(0.0001, si), 1);
+    a.inner.position.y = reduce ? 0 : Math.sin(t * 1.2 + i) * 0.02 * si;
+    a.ring.scale.setScalar(0.4 + si * 0.6);
+  });
   model.position.y = -box.min.y * s + (reduce ? 0 : Math.abs(Math.sin(t * 1.6)) * 0.015);
 
   // cámara (más lejos y con el foco más arriba en pantallas verticales)
@@ -539,7 +588,7 @@ function render() {
 
   // anotaciones en pantalla
   for (const a of annos) {
-    const o = (annoOpacity[a.key] ?? 0) * glFade.o * glIntro;
+    const o = (annoOpacity[a.key.startsWith('av') ? 'av' : a.key] ?? 0) * glFade.o * glIntro;
     if (o <= 0.001) { if (a.o !== 0) { a.el.style.opacity = 0; a.o = 0; } continue; }
     const p = anchorWorld(a.key).project(camera);
     const x = (p.x * 0.5 + 0.5) * innerWidth, y = (-p.y * 0.5 + 0.5) * innerHeight;
