@@ -44,6 +44,35 @@ const C = { ink: 0x2b2622, salvia: 0x3f6b4f, sanguine: 0xb5522e, violet: 0x7a4e8
 const W = 2.25, H = 3.0, D = 0.09, SW = W - 0.16, SH = H - 0.16;
 const FLOOR = -H / 2 - 0.12;                  // la mesa / el suelo
 const desk = document.getElementById('desk');
+// Fotos del escritorio (prueba): pantalla del iPad en fracciones de la imagen
+const PHOTOS = {
+  a: { src: 'escritorio-a', w: 1536, h: 1024, cx: 0.5, cy: 0.4688, sw: 0.1615, sh: 0.3477 },
+  b: { src: 'escritorio-b', w: 1536, h: 1024, cx: 0.4987, cy: 0.4551, sw: 0.1823, sh: 0.3945 },
+  c: { src: 'escritorio-c', w: 2528, h: 1696, cx: 0.5005, cy: 0.548, sw: 0.179, sh: 0.362 },
+};
+let photoKey = new URLSearchParams(location.search).get('foto') || 'a';
+if (!PHOTOS[photoKey]) photoKey = 'a';
+const PHOTO = { fill: 1 };
+const flash = document.getElementById('flash');
+let glIntro = 0;
+function placePhoto() {
+  const ph = PHOTOS[photoKey], vw = innerWidth, vh = innerHeight;
+  const cover = Math.max(vw / ph.w, vh / ph.h);                 // como object-fit: cover
+  const iw = ph.w * cover, ih = ph.h * cover;
+  const ox = (vw - iw) / 2, oy = (vh - ih) / 2;
+  const scx = ox + ph.cx * iw, scy = oy + ph.cy * ih;            // centro de la pantalla en la vista
+  const sw = ph.sw * iw, sh = ph.sh * ih;
+  PHOTO.fill = Math.max(vw / sw, vh / sh) * 1.04;                // escala para que la pantalla llene la vista
+  desk.style.transformOrigin = `${scx}px ${scy}px`;
+}
+function setPhoto(key) {
+  photoKey = key;
+  const img = desk.querySelector('img'), ph = PHOTOS[key];
+  img.srcset = `${ph.src}-1100.webp 1100w, ${ph.src}.webp 2000w`;
+  img.src = `${ph.src}.webp`;
+  placePhoto();
+  document.querySelectorAll('.photos button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === key)));
+}
 const rig = new THREE.Group();          // todo lo que se mueve junto
 const ipad = new THREE.Group();
 rig.add(ipad);
@@ -183,11 +212,7 @@ const shadow = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 1.6), new THREE.MeshB
 shadow.rotation.x = -Math.PI / 2;
 shadow.position.set(-0.4, -H / 2 - 0.12, 0.2);
 rig.add(shadow);
-// sombra del iPad acostado sobre la mesa
-const deskShadow = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 4.4), new THREE.MeshBasicMaterial({ map: shadowTex(), transparent: true, depthWrite: false, color: 0x000000 }));
-deskShadow.rotation.x = -Math.PI / 2;
-deskShadow.position.set(0.12, -H / 2 - 0.115, 0.5);
-rig.add(deskShadow);
+
 
 // ---------- Leonardo ----------
 const leo = new THREE.Group();
@@ -241,7 +266,7 @@ function layout() {
   else L = { heroX: 0.55, zoom: 1.7, lift: 1.25, side: 0.35, portrait: true };
 }
 layout();
-addEventListener('resize', () => { layout(); ScrollTrigger.refresh(); });
+addEventListener('resize', () => { layout(); placePhoto(); ScrollTrigger.refresh(); });
 
 // ---------- Ratón: Leonardo te sigue con la mirada ----------
 const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
@@ -300,7 +325,7 @@ tl.to({}, { duration: 0.3 }, 5.9);
 // 0 → 1.1 · el escritorio: el iPad se levanta de la mesa y la foto se funde en el verde
 tl.shiftChildren(1.1);
 tl.set('.p0', { autoAlpha: 0 }, 0);
-tl.to(S, { desk: 0, duration: 1.0, ease: 'power3.inOut' }, 0.05);
+tl.to(S, { desk: 0, duration: 1.0, ease: 'none' }, 0.05);
 hidePanel('.pdesk', 0.05, 0.25);
 showPanel('.p0', 0.85, 0.3);
 tl.fromTo('h1 .ch', { yPercent: 115 }, { yPercent: 0, duration: 0.35, stagger: 0.008, ease: 'expo.out' }, 0.85);
@@ -366,25 +391,27 @@ function render() {
   mouse.sx += (mouse.x - mouse.sx) * 0.06;
   mouse.sy += (mouse.y - mouse.sy) * 0.06;
 
-  // composición (k = cuánto queda de la escena del escritorio)
-  const k = S.desk, lerp = THREE.MathUtils.lerp;
-  const ke = k * k * (3 - 2 * k);
-  rig.position.x = S.hero * L.heroX * (1 - ke);
-  const floatY = reduce ? 0 : Math.sin(t * 0.8) * 0.03 * S.hero * (1 - k);
-  ipad.rotation.set(lerp(S.rx + (reduce ? 0 : Math.sin(t * 0.6) * 0.015 * (1 - k)), -Math.PI / 2, ke), lerp(S.ry + (reduce ? 0 : mouse.sx * 0.06 * S.hero), 0, ke), 0);
-  ipad.position.set(0, lerp(floatY, FLOOR + D / 2 + 0.01, ke) + Math.sin(Math.PI * k) * 0.9, lerp(0, 0.5, ke));
-  splash.material.opacity = THREE.MathUtils.clamp((k - 0.25) / 0.45, 0, 1);
-  deskShadow.material.opacity = ke * 0.85;
-  shadow.material.opacity = 1 - ke;
-  key.position.set(lerp(3, -5, ke), lerp(5, 7, ke), lerp(5, -2, ke));
-  const fig = lerp(1, 0.62, ke);                   // Leonardo: figurita sobre la mesa → tutor
-  leo.scale.setScalar(fig);
-  leo.position.set(lerp(leoBase.x, L.portrait ? 0.95 : 1.95, ke), FLOOR + (reduce ? 0 : Math.max(0, Math.sin(Math.PI * Math.min(1, k * 1.6))) * 0.35 * (k < 0.62 ? 1 : 0)), lerp(leoBase.z, L.portrait ? 2.35 : 1.15, ke));
-  leo.rotation.y = lerp(S.leoTurn + mouse.sx * 0.45, -0.45 + mouse.sx * 0.3, ke);
-  leo.rotation.x = mouse.sy * 0.06 * (1 - k);
-  desk.style.opacity = Math.min(1, k * 1.6);
-  desk.style.transform = `scale(${1 + (1 - k) * 0.18})`;
-  desk.style.filter = k < 0.999 ? `blur(${(1 - k) * 10}px)` : 'none';
+  // Entrada (k = S.desk: 1 → 0)
+  //   1.00 → 0.50  la foto se acerca hasta entrar en la pantalla del iPad
+  //   0.62 → 0.36  fundido al color de la pantalla (oculta el relevo foto → 3D)
+  //   0.40 → 0.00  la cámara sale de la pantalla 3D y aparece el mundo Meridad
+  const k = S.desk, lerp = THREE.MathUtils.lerp, clamp = THREE.MathUtils.clamp, sm = THREE.MathUtils.smoothstep;
+  const za = sm(1 - k, 0, 0.5);
+  desk.style.transform = `scale(${Math.pow(PHOTO.fill, za)})`;
+  desk.style.opacity = k > 0.47 ? 1 : 0;
+  desk.style.filter = za > 0.55 ? `blur(${(za - 0.55) * 14}px)` : 'none';
+  flash.style.opacity = k > 0.47 ? sm(1 - k, 0.38, 0.53) : sm(k, 0.33, 0.46);
+  const pull = sm(k, 0, 0.4);                       // 1 = cámara pegada a la pantalla 3D
+  glIntro = k > 0.47 ? 0 : 1;
+  rig.position.x = S.hero * L.heroX * (1 - pull);
+  const floatY = reduce ? 0 : Math.sin(t * 0.8) * 0.03 * S.hero * (1 - pull);
+  ipad.rotation.set(lerp(S.rx + (reduce ? 0 : Math.sin(t * 0.6) * 0.015), 0, pull), lerp(S.ry + (reduce ? 0 : mouse.sx * 0.06 * S.hero), 0, pull), 0);
+  ipad.position.set(0, floatY, 0);
+  splash.material.opacity = clamp((k - 0.1) / 0.18, 0, 1);
+  leo.position.set(leoBase.x, FLOOR, leoBase.z);
+  leo.scale.setScalar(Math.max(0.0001, 1 - sm(pull, 0.02, 0.25)));   // aparece al terminar de salir
+  leo.rotation.y = S.leoTurn + mouse.sx * 0.45;
+  leo.rotation.x = mouse.sy * 0.06;
   model.position.y = -box.min.y * s + (reduce ? 0 : Math.abs(Math.sin(t * 1.6)) * 0.015);
 
   // cámara (más lejos y con el foco más arriba en pantallas verticales)
@@ -393,21 +420,23 @@ function render() {
   const lift = L.lift + (L.portrait ? S.hero * 0.75 - S.end * 0.85 - S.focus * 0.75 : 0);
   const zoom = L.portrait ? THREE.MathUtils.lerp(L.zoom, 1.3, S.end) : L.zoom;
   const dx = L.portrait ? S.focus * 0.7 : 0;      // en vertical, Leonardo al centro
-  // cámara del escritorio: casi cenital, como la foto
-  const dz = L.portrait ? 1.18 : 1;
-  camera.position.set(lerp(S.cx * zoom * side + dx, 0, ke), lerp(S.cy + lift * 0.35, FLOOR + 9.6 * dz, ke), lerp(S.cz * zoom, 4.3 * dz, ke));
-  camera.lookAt(lerp(S.tx * side + dx, 0, ke), lerp(S.ty + lift, FLOOR, ke), lerp(S.tz, 0.42, ke));
+  // cámara pegada a la pantalla: la pantalla llena la vista (como el final del acercamiento)
+  const vt = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const fillD = Math.min((SH / 2) / vt, (SW / 2) / (vt * camera.aspect)) * 0.97 + D / 2;
+  camera.position.set(lerp(S.cx * zoom * side + dx, 0, pull), lerp(S.cy + lift * 0.35, 0, pull), lerp(S.cz * zoom, fillD, pull));
+  camera.lookAt(lerp(S.tx * side + dx, 0, pull), lerp(S.ty + lift, 0, pull), lerp(S.tz, 0, pull));
 
   drawInk(S.ink);
   pencil.scale.setScalar(Math.max(0.0001, S.pen));
 
   scene.updateMatrixWorld();
-  canvas.style.opacity = glFade.o;
-  if (glFade.o > 0.01) renderer.render(scene, camera);
+  const glo = glFade.o * glIntro;
+  canvas.style.opacity = glo;
+  if (glo > 0.01) renderer.render(scene, camera);
 
   // anotaciones en pantalla
   for (const a of annos) {
-    const o = (annoOpacity[a.key] ?? 0) * glFade.o;
+    const o = (annoOpacity[a.key] ?? 0) * glFade.o * glIntro;
     if (o <= 0.001) { if (a.o !== 0) { a.el.style.opacity = 0; a.o = 0; } continue; }
     const p = anchorWorld(a.key).project(camera);
     const x = (p.x * 0.5 + 0.5) * innerWidth, y = (-p.y * 0.5 + 0.5) * innerHeight;
@@ -437,13 +466,14 @@ document.querySelectorAll('[data-split]').forEach((el) => {
   el.innerHTML = el.innerHTML.split(/<br\s*\/?>/).map((ln) =>
     `<span class="line">${[...ln].map((c) => `<span class="ch">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</span>`).join('');
 });
+setPhoto(photoKey);
+document.querySelectorAll('.photos button').forEach((b) => b.addEventListener('click', () => setPhoto(b.dataset.f)));
 render();
 setProgress(1);
 const intro = gsap.timeline({ delay: 0.55 });
 intro.to('#loader .ring', { scale: 1.6, opacity: 0, transformOrigin: '50% 50%', duration: 0.8, ease: 'expo.in' })
   .to('#loader', { autoAlpha: 0, duration: 0.6, onComplete: () => document.body.classList.remove('loading') }, '-=0.25')
   .from('#desk img', { scale: 1.08, duration: 1.8, ease: 'expo.out' }, '-=0.4')
-  .from(rig.position, { y: 0.6, duration: 1.4, ease: 'expo.out' }, '<0.1')
   .from('.pdesk > *', { opacity: 0, y: 16, duration: 0.8, stagger: 0.1 }, '<0.5');
 
 // ---------- Tema: salvia (elegido) ----------

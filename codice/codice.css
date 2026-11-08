@@ -23,9 +23,10 @@ img{max-width:100%;height:auto;display:block}
 .paper::before,.paper::after{content:"";position:absolute;width:26px;height:26px;border:1.5px solid var(--accent);opacity:.6}
 .paper::before{left:22px;bottom:22px;border-right:0;border-top:0}
 .paper::after{right:22px;bottom:22px;border-left:0;border-top:0}
-#desk{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;will-change:transform,opacity,filter}
+#desk{position:fixed;inset:0;z-index:2;overflow:hidden;pointer-events:none;will-change:transform,opacity,filter}
 #desk img{width:100%;height:100%;object-fit:cover;object-position:50% 50%}
 #desk::after{content:"";position:absolute;inset:0;background:radial-gradient(130% 100% at 50% 45%,transparent 55%,rgba(10,20,14,.55) 100%)}
+#flash{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;background:radial-gradient(120% 100% at 50% 50%,#FBF7EE,#F0E8D8)}
 #gl{position:fixed;inset:0;width:100vw;height:100vh;z-index:1;display:block}
 
 /* Carga */
@@ -206,3 +207,8 @@ h2{font:600 clamp(36px,4.6vw,64px)/1 var(--serif);letter-spacing:-.025em;margin:
   .anno[data-anchor=ipad],.anno[data-anchor=leoFeet],.anno[data-anchor=lift]{display:none}
   .bubble p{width:min(240px,62vw);font-size:14px}
 }
+
+/* Selector de foto (solo prototipo) */
+.photos{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 14px;border-radius:999px;background:rgba(20,20,20,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.photos button{min-width:32px;height:28px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font:600 12px var(--mono);cursor:pointer}
+.photos button[aria-pressed="true"]{background:#fff;color:#111}
