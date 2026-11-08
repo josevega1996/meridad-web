@@ -14,11 +14,12 @@ document.body.classList.add('loading');
 await new Promise((r) => (window.gsap && window.ScrollTrigger ? r() : addEventListener('DOMContentLoaded', r)));
 const { gsap, ScrollTrigger } = window;
 gsap.registerPlugin(ScrollTrigger);
+ScrollTrigger.config({ ignoreMobileResize: true });     // la barra del navegador en móvil no recalcula todo
 
 // Títulos que entran letra por letra (se separan antes de crear las animaciones)
 document.querySelectorAll('[data-split], .mega').forEach((el) => {
   el.innerHTML = el.innerHTML.split(/<br\s*\/?>/).map((ln) =>
-    `<span class="line">${[...ln].map((c) => `<span class="ch">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</span>`).join('');
+    `<span class="line">${ln.split(' ').map((w) => `<span class="word">${[...w].map((c) => `<span class="ch">${c}</span>`).join('')}</span>`).join(' ')}</span>`).join('');
 });
 
 // ---------- Renderizador ----------
@@ -29,7 +30,7 @@ try {
 } catch {
   location.replace('/clasica/');
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, innerWidth < 900 ? 1.5 : 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
@@ -359,7 +360,7 @@ const avatars = [];
   const bodyG = new THREE.CapsuleGeometry(0.3, 0.5, 3, 9);
   const headG = new THREE.SphereGeometry(0.25, 9, 6);
   const ringG = new THREE.RingGeometry(0.42, 0.45, 48);
-  [[-2.75, 0.3], [-3.75, 0.6], [-4.75, 0.35]].forEach(([x, z]) => {
+  [[-2.6, 0.3], [-3.45, 0.6], [-4.3, 0.35]].forEach(([x, z]) => {
     const g = new THREE.Group();
     const inner = new THREE.Group();
     const body = new THREE.Mesh(bodyG, fill); body.position.y = 0.58;
@@ -401,11 +402,15 @@ function layout() {
   camera.aspect = a;
   camera.updateProjectionMatrix();
   if (a >= 1.15) L = { heroX: THREE.MathUtils.clamp(1.1 * a, 1.3, 1.9), zoom: 1, lift: 0 };
-  else if (a >= 0.8) L = { heroX: 0.3, zoom: 1.3, lift: 0.9, side: 0.6, portrait: true };
-  else L = { heroX: 0.55, zoom: 1.7, lift: 1.25, side: 0.35, portrait: true };
+  else if (a >= 0.8) L = { heroX: 0.3, zoom: 1.3, lift: 0.9, side: 0, portrait: true };
+  else L = { heroX: 0.55, zoom: 1.7, lift: 1.25, side: 0, portrait: true };
 }
 layout();
-addEventListener('resize', () => { layout(); placePhoto(); ScrollTrigger.refresh(); });
+let lastW = innerWidth;
+addEventListener('resize', () => {
+  layout(); placePhoto();
+  if (innerWidth !== lastW) { lastW = innerWidth; ScrollTrigger.refresh(); }   // solo si cambia el ancho
+});
 
 // ---------- Ratón: Leonardo te sigue con la mirada ----------
 const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
@@ -430,7 +435,7 @@ function anchorWorld(key) {
 }
 
 // ---------- Línea de tiempo con el scroll ----------
-const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' }, paused: true });
+const tl = gsap.timeline({ defaults: { ease: 'sine.inOut' }, paused: true });   // curvas suaves: menos tirones
 const P = (sel) => document.querySelector(sel);
 const showPanel = (sel, at, dur = 0.35) => tl.fromTo(P(sel), { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: dur, ease: 'power2.out' }, at);
 const hidePanel = (sel, at, dur = 0.3) => tl.to(P(sel), { autoAlpha: 0, y: -30, duration: dur, ease: 'power2.in' }, at);
@@ -473,7 +478,7 @@ tl.fromTo('h1 .ch', { yPercent: 115 }, { yPercent: 0, duration: 0.35, stagger: 0
 tl.to(annoOpacity, { ipad: 1, leoFeet: 1, duration: 0.15 }, 1.0);
 
 // 6.8 → 8.3 · tus avatares: Leonardo hoy, el tuyo muy pronto
-tl.to(S, { cx: -1.6, cy: -0.15, cz: 9.2, tx: -1.65, ty: -0.8, tz: 0.4, lift: 0, ry: 0, away: 1, leoTurn: -0.12, focus: 1, duration: 1.0 }, 6.8);
+tl.to(S, { cx: -0.75, cy: -0.1, cz: 11, tx: -0.7, ty: -0.85, tz: 0.4, lift: 0, ry: 0, away: 1, leoTurn: -0.12, focus: 1, duration: 1.0 }, 6.8);
 tl.to(S, { av: 1, duration: 0.9, ease: 'power1.out' }, 7.2);
 showPanel('.pav', 7.25);
 tl.to(annoOpacity, { leoAv: 1, duration: 0.2 }, 7.3);
@@ -483,7 +488,7 @@ tl.to(annoOpacity, { av: 0, leoAv: 0, duration: 0.2 }, 8.35);
 tl.to({}, { duration: 0.2 }, 8.55);
 
 ScrollTrigger.create({
-  trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: reduce ? true : 1.1,
+  trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: reduce ? true : 1.4,
   onUpdate: (st) => tl.progress(st.progress),
 });
 
@@ -512,14 +517,16 @@ ScrollTrigger.batch('.reveal', {
 });
 
 // ---------- Cierre: vuelve el 3D y la llamada a descargar ----------
-gsap.fromTo(glFade, { o: 0 }, { o: 1, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '#finale', start: 'top bottom', end: 'top 30%', scrub: true } });
-const tl2 = gsap.timeline({ paused: true, defaults: { ease: 'power2.inOut' } });
-tl2.to(S, { hero: 0, cx: 0, cy: 0.5, cz: 12.6, tx: 0, ty: 0.55, tz: 0, rx: -0.06, ry: 0, lift: 0, focus: 0, end: 1, away: 0, av: 0, splashOn: 1, leoHide: 1, duration: 1 }, 0)
-  .fromTo('.p4 .fig', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.3 }, 0.45)
-  .fromTo('.p4', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.05 }, 0.45)
-  .fromTo('.p4 .mega .ch', { yPercent: 115 }, { yPercent: 0, duration: 0.4, stagger: 0.006, ease: 'expo.out' }, 0.5)
-  .fromTo('.p5', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'power2.out' }, 0.75);
-ScrollTrigger.create({ trigger: '#finale', start: 'top 70%', end: 'bottom bottom', scrub: reduce ? true : 1, onUpdate: (st) => tl2.progress(st.progress) });
+gsap.fromTo(glFade, { o: 0 }, { o: 1, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '#finale', start: 'top 80%', end: 'top 25%', scrub: true } });
+// Al entrar al cierre (con el 3D aún oculto) la escena salta a la vitrina: sin Leonardo ni avatares
+const tl2 = gsap.timeline({ paused: true, defaults: { ease: 'sine.inOut' } });
+tl2.set(S, { hero: 0, cx: 0, cy: 0.5, cz: 16.5, tx: 0, ty: 0.7, tz: 0, rx: -0.06, ry: 0, lift: 0, focus: 0, end: 1, away: 0, av: 0, splashOn: 1, leoHide: 1 }, 0.001)
+  .to(S, { cz: 14.2, duration: 1 }, 0.002)
+  .fromTo('.p4 .fig', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.25 }, 0.4)
+  .fromTo('.p4', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.05 }, 0.4)
+  .fromTo('.p4 .mega .ch', { yPercent: 115 }, { yPercent: 0, duration: 0.35, stagger: 0.006, ease: 'expo.out' }, 0.45)
+  .fromTo('.p5', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: 'power2.out' }, 0.7);
+ScrollTrigger.create({ trigger: '#finale', start: 'top bottom', end: 'bottom bottom', scrub: reduce ? true : 1, onUpdate: (st) => tl2.progress(st.progress) });
 
 // ---------- Bucle de dibujo ----------
 const clock = new THREE.Clock();
@@ -553,7 +560,7 @@ function render() {
   const za = sm(1 - k, 0, 0.5);
   desk.style.transform = `scale(${Math.pow(PHOTO.fill, za)})`;
   desk.style.opacity = k > 0.47 ? 1 : 0;
-  desk.style.filter = za > 0.55 ? `blur(${(za - 0.55) * 14}px)` : 'none';
+  desk.style.filter = za > 0.55 && !L.portrait ? `blur(${(za - 0.55) * 14}px)` : 'none';   // en móvil el desenfoque es caro
   flash.style.opacity = k > 0.47 ? sm(1 - k, 0.38, 0.53) : sm(k, 0.33, 0.46);
   const pull = sm(k, 0, 0.4);                       // 1 = cámara pegada a la pantalla 3D
   glIntro = k > 0.47 ? 0 : 1;
@@ -567,11 +574,13 @@ function render() {
   ipad.rotation.y += reduce ? 0 : S.end * Math.sin(t * 0.5) * 0.38;
   glow.style.opacity = S.end * glFade.o;
   leo.position.set(leoBase.x, FLOOR, leoBase.z);
-  leo.scale.setScalar(Math.max(0.0001, (1 - sm(pull, 0.02, 0.25)) * (1 - S.leoHide)));   // aparece al terminar de salir
+  // Leonardo no estorba al iPad: solo aparece en la portada y en sus escenas
+  const leoVis = clamp(Math.max(S.hero, S.focus) * 2, 0, 1);
+  leo.scale.setScalar(Math.max(0.0001, (1 - sm(pull, 0.02, 0.25)) * (1 - S.leoHide) * leoVis));   // aparece al terminar de salir
   leo.rotation.y = S.leoTurn + mouse.sx * 0.45;
   leo.rotation.x = mouse.sy * 0.06;
   // el iPad se aparta hacia arriba para dejar ver la fila de avatares
-  ipad.position.y += S.away * 4.2;
+  ipad.position.y += (L.portrait ? Math.max(S.away, S.focus) * 6 : S.away * 4.2);   // en vertical también se aparta en el primer plano del tutor
   avatars.forEach((a, i) => {
     const si = sm(S.av, i * 0.18, i * 0.18 + 0.5);
     a.g.visible = si > 0.001;
@@ -584,14 +593,19 @@ function render() {
   // cámara (más lejos y con el foco más arriba en pantallas verticales)
   // en vertical: sujetos centrados y más abajo (el texto va arriba)
   const side = THREE.MathUtils.lerp(L.side ?? 1, 1, S.focus);
-  const lift = L.lift + (L.portrait ? S.hero * 0.75 - S.end * 0.85 - S.focus * 0.75 : 0);
+  const lift = L.lift + (L.portrait ? S.hero * 0.75 - S.end * 0.85 - S.focus * 0.75 + S.away * 0.55 : 0);
   const zoom = L.portrait ? THREE.MathUtils.lerp(L.zoom, 1.3, S.end) : L.zoom;
-  const dx = L.portrait ? S.focus * 0.7 : 0;      // en vertical, Leonardo al centro
+  // en vertical: Leonardo (o la fila de avatares) al centro de la pantalla
+  const pcx = L.portrait ? lerp(headLocal.x, -2.85, S.away) : 0;
+  const dx = 0;
   // cámara pegada a la pantalla: la pantalla llena la vista (como el final del acercamiento)
   const vt = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const fillD = Math.min((SH / 2) / vt, (SW / 2) / (vt * camera.aspect)) * 0.97 + D / 2;
-  camera.position.set(lerp(S.cx * zoom * side + dx, 0, pull), lerp(S.cy + lift * 0.35, 0, pull), lerp(S.cz * zoom, fillD, pull));
-  camera.lookAt(lerp(S.tx * side + dx, 0, pull), lerp(S.ty + lift, 0, pull), lerp(S.tz, 0, pull));
+  let camX = S.cx * zoom * side, tgtX = S.tx * side;
+  if (L.portrait) { camX = lerp(camX, pcx, S.focus); tgtX = lerp(tgtX, pcx, S.focus); }
+  const camZ = S.cz * zoom * (L.portrait ? 1 + S.away * 0.2 : 1);
+  camera.position.set(lerp(camX, 0, pull), lerp(S.cy + lift * 0.35, 0, pull), lerp(camZ, fillD, pull));
+  camera.lookAt(lerp(tgtX, 0, pull), lerp(S.ty + lift, 0, pull), lerp(S.tz, 0, pull));
 
   drawInk(S.ink);
   pencil.scale.setScalar(Math.max(0.0001, S.pen));
@@ -608,6 +622,11 @@ function render() {
     const p = anchorWorld(a.key).project(camera);
     const x = (p.x * 0.5 + 0.5) * innerWidth, y = (-p.y * 0.5 + 0.5) * innerHeight;
     a.el.style.transform = `translate(${x}px,${y}px)`;
+    if (a.el.classList.contains('anno')) {
+      const span = a.el.lastElementChild, wl = span.offsetWidth + 40;
+      if (x + wl > innerWidth - 8) a.el.classList.add('left');
+      else if (x - wl < 8) a.el.classList.remove('left');
+    }
     a.el.style.opacity = o; a.o = o;
   }
   requestAnimationFrame(render);
