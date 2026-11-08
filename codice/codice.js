@@ -38,7 +38,7 @@ rim.position.set(-4, 3, -5);
 scene.add(key, rim, new THREE.HemisphereLight(0xfff8ee, 0xcbb894, 0.5));
 
 // ---------- Colores del códice ----------
-const C = { ink: 0x2b2622, salvia: 0x3f6b4f, sanguine: 0xb5522e, violet: 0x7a4e8c, ochre: 0xc9772e };
+const C = { ink: 0x2b2622, salvia: 0x3f6b4f, sanguine: 0xb5522e, violet: 0x7a4e8c, ochre: 0xb87a2e, blue: 0x2f6f8f };
 
 // ---------- iPad ----------
 const W = 2.25, H = 3.0, D = 0.09, SW = W - 0.16, SH = H - 0.16;
@@ -50,8 +50,7 @@ const PHOTOS = {
   b: { src: 'escritorio-b', w: 1536, h: 1024, cx: 0.4987, cy: 0.4551, sw: 0.1823, sh: 0.3945 },
   c: { src: 'escritorio-c', w: 2528, h: 1696, cx: 0.5005, cy: 0.548, sw: 0.179, sh: 0.362 },
 };
-let photoKey = new URLSearchParams(location.search).get('foto') || 'a';
-if (!PHOTOS[photoKey]) photoKey = 'a';
+let photoKey = 'a';
 const PHOTO = { fill: 1 };
 const flash = document.getElementById('flash');
 let glIntro = 0;
@@ -71,7 +70,6 @@ function setPhoto(key) {
   img.srcset = `${ph.src}-1100.webp 1100w, ${ph.src}.webp 2000w`;
   img.src = `${ph.src}.webp`;
   placePhoto();
-  document.querySelectorAll('.photos button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === key)));
 }
 const rig = new THREE.Group();          // todo lo que se mueve junto
 const ipad = new THREE.Group();
@@ -87,21 +85,91 @@ ipad.add(body);
 await document.fonts.load('600 70px Fraunces');
 await document.fonts.load('600 30px Nunito');
 
+await document.fonts.load('400 52px "STIX Two Text"');
+await document.fonts.load('italic 400 52px "STIX Two Text"');
+await document.fonts.load('700 52px "STIX Two Text"');
+
+// Página del cuaderno: ecuaciones de Navier–Stokes (lo impreso; el lápiz dibuja el resto)
+const MATH = (st, size) => `${st === 'i' ? 'italic 400' : st === 'b' ? '700' : '400'} ${size}px "STIX Two Text"`;
+function drawFormula(g, x, base, parts, size) {
+  const spans = {};
+  const mark = (tag, x0, x1) => { if (!tag) return; const sp = spans[tag] || (spans[tag] = [Infinity, -Infinity]); sp[0] = Math.min(sp[0], x0); sp[1] = Math.max(sp[1], x1); };
+  const run = (items, sz, draw, bx, by) => {          // dibuja (o mide) una lista de piezas
+    let cx = bx;
+    for (const it of items) {
+      if (it.frac) {
+        const fs = sz * 0.78;
+        const wn = run(it.frac[0], fs, false, 0, 0), wd = run(it.frac[1], fs, false, 0, 0);
+        const w = Math.max(wn, wd) + sz * 0.2;
+        if (draw) {
+          run(it.frac[0], fs, true, cx + (w - wn) / 2, by - sz * 0.42);
+          run(it.frac[1], fs, true, cx + (w - wd) / 2, by + sz * 0.5);
+          g.fillRect(cx, by - sz * 0.3, w, Math.max(2, sz * 0.045));
+          mark(it.tag, cx, cx + w);
+        }
+        cx += w;
+      } else {
+        g.font = MATH(it.st, sz);
+        const w = g.measureText(it.t).width;
+        if (draw) { g.fillText(it.t, cx, by); mark(it.tag, cx, cx + w); }
+        cx += w;
+        if (it.sup) {
+          g.font = MATH('r', sz * 0.6);
+          const ws = g.measureText(it.sup).width;
+          if (draw) { g.fillText(it.sup, cx + 1, by - sz * 0.42); mark(it.tag, cx, cx + ws); }
+          cx += ws + 2;
+        }
+      }
+    }
+    return cx - bx;
+  };
+  run(parts, size, true, x, base);
+  return spans;
+}
+const T = (t, st = 'r', tag, sup) => ({ t, st, tag, sup });
+const momentum = [
+  T('ρ', 'i'), T(' ('),
+  { frac: [[T('∂'), T('u', 'b')], [T('∂'), T('t', 'i')]], tag: 'inercia' },
+  T(' + (', 'r', 'inercia'), T('u', 'b', 'inercia'), T(' · ∇) ', 'r', 'inercia'), T('u', 'b', 'inercia'), T(')'),
+  T('  =  '), T('−∇', 'r', 'presion'), T('p', 'i', 'presion'),
+  T('  +  '), T('μ', 'i', 'viscosidad'), T('∇', 'r', 'viscosidad', '2'), T('u', 'b', 'viscosidad'),
+  T('  +  '), T('f', 'b', 'fuerzas'),
+];
+let pageSpans = {};
 function paperTexture() {
   const c = document.createElement('canvas');
   c.width = 1050; c.height = 1400;
   const g = c.getContext('2d');
-  const r = 60;
-  g.beginPath(); g.roundRect(0, 0, c.width, c.height, r); g.clip();
+  g.beginPath(); g.roundRect(0, 0, c.width, c.height, 60); g.clip();
   g.fillStyle = '#FBF6EA'; g.fillRect(0, 0, c.width, c.height);
-  g.strokeStyle = '#DED5C2'; g.lineWidth = 2;
-  for (let y = 300; y < c.height - 40; y += 46) { g.beginPath(); g.moveTo(0, y); g.lineTo(c.width, y); g.stroke(); }
-  g.strokeStyle = 'rgba(181,82,46,.35)'; g.beginPath(); g.moveTo(100, 0); g.lineTo(100, c.height); g.stroke();
-  g.fillStyle = '#2B2622'; g.font = '600 76px Fraunces'; g.fillText('La célula', 130, 190);
-  g.fillStyle = '#7A6E5C'; g.font = '600 30px Nunito'; g.fillText('Biología celular · Unidad 2', 132, 240);
-  g.fillStyle = '#3A342D'; g.font = '600 31px Nunito';
-  ['• Membrana: controla qué entra y qué sale', '• Núcleo: guarda el ADN', '• Mitocondria: produce la energía (ATP)']
-    .forEach((t, i) => g.fillText(t, 132, 330 + i * 46));
+  // papel de puntos (ingeniería)
+  g.fillStyle = '#D9CFBB';
+  for (let y = 260; y < c.height - 30; y += 36) for (let x = 36; x < c.width - 20; x += 36) { g.beginPath(); g.arc(x, y, 2.1, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#2B2622'; g.font = '600 68px Fraunces'; g.fillText('Navier–Stokes', 96, 150);
+  g.fillStyle = '#7A6E5C'; g.font = '600 28px Nunito'; g.fillText('Mecánica de fluidos · Clase 7 · fluido incompresible', 98, 198);
+  // ecuación de momento (ajusta el tamaño al ancho)
+  g.fillStyle = '#2B2622';
+  let size = 50;
+  const probe = document.createElement('canvas').getContext('2d');
+  const widthAt = (sz) => { let w = 0; for (const it of momentum) { if (it.frac) { probe.font = MATH('r', sz * 0.78); w += probe.measureText('∂u').width + sz * 0.2; } else { probe.font = MATH(it.st, sz); w += probe.measureText(it.t).width + (it.sup ? sz * 0.4 : 0); } } return w; };
+  while (widthAt(size) > 860 && size > 34) size -= 2;
+  pageSpans = drawFormula(g, 96, 352, momentum, size);
+  // etiquetas bajo cada término (el lápiz dibuja los corchetes)
+  const labels = { inercia: ['inercia', '#3F6B4F'], presion: ['presión', '#2F6F8F'], viscosidad: ['viscosidad', '#B87A2E'], fuerzas: ['fuerzas', '#7A4E8C'] };
+  g.font = '700 22px Nunito'; g.textAlign = 'center';
+  for (const [k, [txt, col]] of Object.entries(labels)) { const sp = pageSpans[k]; if (sp) { g.fillStyle = col; g.fillText(txt, (sp[0] + sp[1]) / 2, 452); } }
+  g.textAlign = 'left';
+  // continuidad
+  g.fillStyle = '#2B2622';
+  drawFormula(g, 96, 540, [T('∇ · '), T('u', 'b'), T('  =  0')], 44);
+  g.fillStyle = '#7A6E5C'; g.font = '600 26px Nunito'; g.fillText('continuidad: lo que entra, sale', 330, 536);
+  // pie del dibujo y Reynolds
+  g.fillStyle = '#7A6E5C'; g.font = 'italic 400 26px "STIX Two Text"'; g.fillText('Flujo alrededor de un perfil alar, α ≈ 7°', 96, 1135);
+  g.fillStyle = '#2B2622';
+  drawFormula(g, 130, 1268, [T('Re', 'i'), T('  =  '), { frac: [[T('ρ', 'i'), T('v', 'i'), T('L', 'i')], [T('μ', 'i')]] }], 48);
+  g.fillStyle = '#7A6E5C'; g.font = '600 26px Nunito';
+  g.fillText('Número de Reynolds', 470, 1236);
+  g.fillText('laminar  →  turbulento  (Re ≳ 2300)', 470, 1278);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -157,15 +225,50 @@ function loop(cx, cy, rx, ry, start, sweep, n, seed, sq = 2) {
   return pts;
 }
 const line = (pts) => pts.map(([x, y]) => new THREE.Vector3(x, y, 0));
+// corchete bajo un término de la ecuación
+const brace = ([x0, x1], y) => { const m = (x0 + x1) / 2; return [px(x0, y - 6), px(x0 + 4, y + 6), px(m - 10, y + 7), px(m, y + 17), px(m + 10, y + 7), px(x1 - 4, y + 6), px(x1, y - 6)]; };
+// perfil alar NACA 4412 girado α
+function airfoil(lx, ly, chord, alpha) {
+  const m = 0.04, pp = 0.4, t = 0.12, pts = [], ca = Math.cos(alpha), sa = Math.sin(alpha);
+  const surf = (xc, up) => {
+    const yt = 5 * t * (0.2969 * Math.sqrt(xc) - 0.126 * xc - 0.3516 * xc ** 2 + 0.2843 * xc ** 3 - 0.1036 * xc ** 4);
+    const yc = xc < pp ? m / pp ** 2 * (2 * pp * xc - xc ** 2) : m / (1 - pp) ** 2 * (1 - 2 * pp + 2 * pp * xc - xc ** 2);
+    const y = yc + (up ? yt : -yt);
+    const X = xc * chord, Y = -y * chord;                     // y del lienzo hacia abajo
+    return px(lx + X * ca - Y * sa, ly + X * sa + Y * ca);
+  };
+  for (let i = 40; i >= 0; i--) { const b = (i / 40); pts.push(surf((1 - Math.cos(b * Math.PI)) / 2, true)); }
+  for (let i = 1; i <= 40; i++) { const b = (i / 40); pts.push(surf((1 - Math.cos(b * Math.PI)) / 2, false)); }
+  return pts;
+}
+// línea de flujo que rodea el perfil (y arriba se abre más: sustentación)
+function streamline(y0) {
+  const pts = [], cx = 520, cy = 840;
+  for (let x = 140; x <= 920; x += 20) {
+    const g = Math.exp(-(((x - cx) / 175) ** 2));
+    const d = y0 - cy, dir = Math.sign(d);
+    const push = g * 5200 / (Math.abs(d) + 30) * dir;
+    const down = 34 * (1 / (1 + Math.exp(-(x - 600) / 60))) * (60 / (Math.abs(d) + 60));
+    pts.push(px(x, y0 + push + down));
+  }
+  return pts;
+}
+function spiral(cx, cy, r0, r1, turns, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) { const a = (i / n) * turns * Math.PI * 2, r = r1 - (r1 - r0) * (i / n); pts.push(px(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.8)); }
+  return pts;
+}
+const frameBox = (x0, y0, x1, y1) => [px(x0, y0 + 3), px((x0 + x1) / 2, y0 - 2), px(x1, y0 + 2), px(x1 + 2, (y0 + y1) / 2), px(x1 - 2, y1), px((x0 + x1) / 2, y1 + 3), px(x0 + 1, y1 - 2), px(x0 - 2, (y0 + y1) / 2), px(x0 + 6, y0 + 1)];
+const SP = (k) => pageSpans[k] || [0, 10];
 const strokeDefs = [
-  { pts: [px(130, 212), px(220, 222), px(330, 206), px(440, 220), px(520, 210)], color: C.salvia, r: 0.012 },
-  { pts: loop(0, -0.42, 0.82, 0.55, 2.3, Math.PI * 2 + 0.32, 90, 1), color: C.salvia, r: 0.014 },
-  { pts: loop(0.2, -0.34, 0.26, 0.19, 0.9, Math.PI * 2 + 0.25, 46, 3), color: C.violet, r: 0.013 },
-  { pts: loop(-0.42, -0.6, 0.18, 0.075, 3.4, Math.PI * 2 + 0.2, 40, 5, 5), color: C.ochre, r: 0.012 },
-  { pts: line([[0.7, 0.22], [0.56, 0.06], [0.42, -0.1], [0.33, -0.2]]), color: C.ink, r: 0.009 },
-  { pts: line([[0.43, -0.17], [0.33, -0.2], [0.35, -0.09]]), color: C.ink, r: 0.009 },
-  { pts: line([[-0.55, -1.15], [-0.5, -0.95], [-0.46, -0.72]]), color: C.ink, r: 0.009 },
-  { pts: line([[-0.53, -0.8], [-0.46, -0.72], [-0.4, -0.81]]), color: C.ink, r: 0.009 },
+  { pts: brace(SP('inercia'), 400), color: C.salvia, r: 0.008 },
+  { pts: brace(SP('presion'), 400), color: C.blue, r: 0.008 },
+  { pts: brace(SP('viscosidad'), 400), color: C.ochre, r: 0.008 },
+  { pts: brace(SP('fuerzas'), 400), color: C.violet, r: 0.008 },
+  { pts: airfoil(330, 820, 390, 0.12), color: C.ink, r: 0.011 },
+  ...[650, 712, 770, 912, 975, 1040].map((y) => ({ pts: streamline(y), color: C.blue, r: 0.0065 })),
+  { pts: spiral(820, 960, 6, 48, 2.3, 70), color: C.sanguine, r: 0.0075 },
+  { pts: frameBox(108, 1196, 420, 1316), color: C.ink, r: 0.007 },
 ];
 const inkGroup = new THREE.Group();
 inkGroup.position.z = D / 2 + 0.012;
@@ -281,9 +384,9 @@ function anchorWorld(key) {
     case 'ipad': return v.set(W / 2 - 0.1, H / 2 - 0.1, D / 2).applyMatrix4(ipad.matrixWorld);
     case 'leoFeet': return v.set(leoBase.x + 0.28, -H / 2 + 0.2, leoBase.z).applyMatrix4(rig.matrixWorld);
     case 'pencil': return pencil.getWorldPosition(v);
-    case 'nucleus': return v.set(0.42, -0.2, 0).applyMatrix4(inkGroup.matrixWorld);
-    case 'mito': return v.set(-0.58, -0.62, 0).applyMatrix4(inkGroup.matrixWorld);
-    case 'lift': return v.set(-0.8, -0.3, 0).applyMatrix4(strokes[1].mesh.matrixWorld);
+    case 'nucleus': return v.copy(px(610, 800)).applyMatrix4(inkGroup.matrixWorld);
+    case 'mito': return v.copy(px(800, 985)).applyMatrix4(inkGroup.matrixWorld);
+    case 'lift': return v.copy(px(560, 400)).applyMatrix4(strokes[0].mesh.matrixWorld);
     case 'leoHead': return v.copy(headLocal).add(new THREE.Vector3(0.1, 0.18, 0)).applyMatrix4(rig.matrixWorld);
   }
 }
@@ -302,7 +405,7 @@ const anno = (key, at, out) => {
 tl.to(annoOpacity, { ipad: 0, leoFeet: 0, duration: 0.2 }, 0.45);
 hidePanel('.p0', 0.45);
 // 1 → 3 · la tinta: la cámara entra a la pantalla y el lápiz dibuja
-tl.to(S, { hero: 0, cx: 1.1, cy: -0.05, cz: 6.2, tx: 1.15, ty: -0.3, rx: 0, ry: 0, leoTurn: 0.9, duration: 1.1 }, 0.5);
+tl.to(S, { hero: 0, cx: 1.15, cy: 0.1, cz: 6.7, tx: 1.2, ty: 0.02, rx: 0, ry: 0, leoTurn: 0.9, duration: 1.1 }, 0.5);
 tl.to(S, { pen: 1, duration: 0.25 }, 1.25);
 tl.to(S, { ink: 1, duration: 1.5, ease: 'none' }, 1.35);
 tl.to(S, { pen: 0, duration: 0.25 }, 2.85);
@@ -311,7 +414,7 @@ anno('pencil', 1.4, 2.8);
 anno('nucleus', 2.55, 3.35); anno('mito', 2.75, 3.35);
 hidePanel('.p1', 3.0);
 // 3 → 4 · la tinta se levanta del papel; giro de cámara
-tl.to(S, { lift: 1, cx: 2.6, cy: 0.7, cz: 5.4, tx: 1.35, ty: -0.35, ry: -0.22, duration: 1.0 }, 3.1);
+tl.to(S, { lift: 1, cx: 2.6, cy: 0.75, cz: 6.3, tx: 1.05, ty: -0.05, ry: -0.22, duration: 1.0 }, 3.1);
 showPanel('.p2', 3.35);
 anno('lift', 3.6, 4.25);
 hidePanel('.p2', 4.2);
@@ -467,7 +570,6 @@ document.querySelectorAll('[data-split]').forEach((el) => {
     `<span class="line">${[...ln].map((c) => `<span class="ch">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</span>`).join('');
 });
 setPhoto(photoKey);
-document.querySelectorAll('.photos button').forEach((b) => b.addEventListener('click', () => setPhoto(b.dataset.f)));
 render();
 setProgress(1);
 const intro = gsap.timeline({ delay: 0.55 });
