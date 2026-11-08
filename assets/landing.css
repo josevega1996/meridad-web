@@ -157,3 +157,20 @@ footer a:hover{color:var(--ink)}
   .btn{width:100%}
   .btn-store,.top .btn{width:auto}
 }
+
+/* Burbuja con mensajes que rotan */
+.bubble{transition:opacity .35s ease,transform .35s ease}
+.bubble.out{opacity:0;transform:translateY(4px)}
+.bubble cite{display:block;margin-top:6px;font-style:normal;font-weight:700;font-size:12.5px;color:var(--muted)}
+
+/* Selector de avatares (Leonardo hoy, más muy pronto) */
+.avatars{display:grid;grid-template-columns:1.4fr 1fr;grid-template-rows:repeat(3,1fr);gap:16px}
+.avatar{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px}
+.avatar b{font:600 18px var(--serif)}
+.avatar span{font-size:13px;font-weight:800;color:var(--muted)}
+.avatar.current{grid-row:1 / span 3;border:2px solid var(--salvia);box-shadow:var(--shadow);padding:24px 16px}
+.avatar.current img{width:78%;max-width:260px;margin-bottom:10px;filter:drop-shadow(0 12px 18px rgba(40,30,20,.22))}
+.avatar.current span{color:var(--salvia)}
+.avatar.soon{border-style:dashed;border-color:var(--strong);background:transparent}
+.avatar.soon i{font:600 30px/1 var(--serif);font-style:normal;color:var(--strong);width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--tint);margin-bottom:6px}
+@media (max-width:640px){.avatar.soon i{width:40px;height:40px;font-size:22px}.avatar b{font-size:16px}}
