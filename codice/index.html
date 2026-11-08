@@ -44,6 +44,7 @@
 </div>
 
 <div class="paper" aria-hidden="true"></div>
+<div id="desk" aria-hidden="true"><img src="escritorio.webp" srcset="escritorio-1000.webp 1000w, escritorio.webp 1536w" sizes="100vw" alt="" fetchpriority="high"></div>
 <canvas id="gl" aria-hidden="true"></canvas>
 
 <header class="bar">
@@ -54,6 +55,11 @@
 
 <!-- Textos de cada escena (fijos; los mueve la línea de tiempo) -->
 <div class="panels">
+  <section class="panel pdesk">
+    <p class="kicker">Cuaderno para iPad · con tutor de IA</p>
+    <p class="hint">Desliza para empezar <span>↓</span></p>
+  </section>
+
   <section class="panel p0">
     <p class="kicker">Cuaderno para iPad · con tutor de IA</p>
     <h1 data-split>Escribe.<br>Entiende.<br>Recuerda.</h1>
@@ -212,14 +218,7 @@
 </footer>
 
 
-<!-- Selector de color: solo para elegir en el prototipo -->
-<div class="themes" role="group" aria-label="Color de fondo">
-  <span class="name" id="themeName">Salvia</span>
-  <button data-t="salvia" style="background:#21392A" aria-label="Salvia profunda"></button>
-  <button data-t="noche" style="background:#0F1412" aria-label="Noche"></button>
-  <button data-t="blanco" style="background:#F7F6F2" aria-label="Blanco"></button>
-  <button data-t="pergamino" style="background:#F2EADA" aria-label="Pergamino"></button>
-</div>
+
 <noscript><p class="nogl">Esta página necesita JavaScript. <a href="/">Ver la versión clásica</a>.</p></noscript>
 </body>
 </html>

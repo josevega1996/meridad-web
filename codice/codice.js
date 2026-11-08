@@ -8,12 +8,7 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s) => document.querySelector(s);
 document.body.classList.add('loading');
 
-// ---------- Tema de color (selector del prototipo) ----------
-const THEMES = { salvia: 'Salvia', noche: 'Noche', blanco: 'Blanco', pergamino: 'Pergamino' };
-let theme = 'salvia';
-try { theme = localStorage.getItem('codice-theme') || theme; } catch {}
-if (!THEMES[theme]) theme = 'salvia';
-document.documentElement.dataset.theme = theme;
+
 
 // GSAP llega con «defer»; el módulo puede ejecutarse antes
 await new Promise((r) => (window.gsap && window.ScrollTrigger ? r() : addEventListener('DOMContentLoaded', r)));
@@ -47,6 +42,8 @@ const C = { ink: 0x2b2622, salvia: 0x3f6b4f, sanguine: 0xb5522e, violet: 0x7a4e8
 
 // ---------- iPad ----------
 const W = 2.25, H = 3.0, D = 0.09, SW = W - 0.16, SH = H - 0.16;
+const FLOOR = -H / 2 - 0.12;                  // la mesa / el suelo
+const desk = document.getElementById('desk');
 const rig = new THREE.Group();          // todo lo que se mueve junto
 const ipad = new THREE.Group();
 rig.add(ipad);
@@ -54,7 +51,7 @@ scene.add(rig);
 
 const body = new THREE.Mesh(
   new RoundedBoxGeometry(W, H, D, 6, 0.17),
-  new THREE.MeshStandardMaterial({ color: 0x2a2622, metalness: 0.55, roughness: 0.38 })
+  new THREE.MeshStandardMaterial({ color: 0x2a2622, metalness: 0.35, roughness: 0.5 })
 );
 ipad.add(body);
 
@@ -87,6 +84,32 @@ const screen = new THREE.Mesh(
 );
 screen.position.z = D / 2 + 0.002;
 ipad.add(screen);
+
+// Pantalla de inicio de Meridad (la que se ve con el iPad sobre la mesa)
+const logoImg = await new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = '/assets/logo.png'; });
+function splashTexture() {
+  const c = document.createElement('canvas');
+  c.width = 1050; c.height = 1400;
+  const g = c.getContext('2d');
+  g.beginPath(); g.roundRect(0, 0, c.width, c.height, 60); g.clip();
+  const grd = g.createLinearGradient(0, 0, 0, c.height);
+  grd.addColorStop(0, '#FBF7EE'); grd.addColorStop(1, '#F1EADB');
+  g.fillStyle = grd; g.fillRect(0, 0, c.width, c.height);
+  if (logoImg) { g.save(); g.beginPath(); g.roundRect(395, 450, 260, 260, 58); g.clip(); g.drawImage(logoImg, 395, 450, 260, 260); g.restore(); }
+  g.textAlign = 'center';
+  g.fillStyle = '#2B2622'; g.font = '600 112px Fraunces'; g.fillText('Meridad', 525, 860);
+  g.fillStyle = '#6E6352'; g.font = '600 38px Nunito'; g.fillText('Escribe, entiende y recuerda.', 525, 930);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+const splash = new THREE.Mesh(
+  new THREE.PlaneGeometry(SW, SH),
+  new THREE.MeshBasicMaterial({ map: splashTexture(), transparent: true, toneMapped: false, depthWrite: false })
+);
+splash.position.z = D / 2 + 0.004;
+ipad.add(splash);
 
 // px del lienzo → coordenadas de la pantalla
 const px = (x, y) => new THREE.Vector3((x / 1050 - 0.5) * SW, (0.5 - y / 1400) * SH, 0);
@@ -160,6 +183,11 @@ const shadow = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 1.6), new THREE.MeshB
 shadow.rotation.x = -Math.PI / 2;
 shadow.position.set(-0.4, -H / 2 - 0.12, 0.2);
 rig.add(shadow);
+// sombra del iPad acostado sobre la mesa
+const deskShadow = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 4.4), new THREE.MeshBasicMaterial({ map: shadowTex(), transparent: true, depthWrite: false, color: 0x000000 }));
+deskShadow.rotation.x = -Math.PI / 2;
+deskShadow.position.set(0.12, -H / 2 - 0.115, 0.5);
+rig.add(deskShadow);
 
 // ---------- Leonardo ----------
 const leo = new THREE.Group();
@@ -189,6 +217,7 @@ leo.position.set(leoBase.x, -H / 2 - 0.12, leoBase.z);
 
 // ---------- Estado que anima la línea de tiempo ----------
 const S = {
+  desk: 1,                                    // 1 = iPad acostado sobre el escritorio (foto)
   hero: 1,                                    // 1 = composición de portada (rig a la derecha)
   cx: 0.0, cy: 0.35, cz: 8.4, tx: 0, ty: -0.1, tz: 0,
   rx: -0.22, ry: -0.42,
@@ -220,7 +249,7 @@ addEventListener('pointermove', (e) => { mouse.x = e.clientX / innerWidth * 2 - 
 
 // ---------- Anotaciones ----------
 const annos = [...document.querySelectorAll('[data-anchor]')].map((el) => ({ el, key: el.dataset.anchor, o: 0 }));
-const annoOpacity = { ipad: 1, leoFeet: 1, pencil: 0, nucleus: 0, mito: 0, lift: 0, leoHead: 0 };
+const annoOpacity = { ipad: 0, leoFeet: 0, pencil: 0, nucleus: 0, mito: 0, lift: 0, leoHead: 0 };
 const v = new THREE.Vector3();
 function anchorWorld(key) {
   switch (key) {
@@ -267,6 +296,15 @@ showPanel('.p3', 4.75);
 anno('leoHead', 4.9, 5.75);
 hidePanel('.p3', 5.65);
 tl.to({}, { duration: 0.3 }, 5.9);
+
+// 0 → 1.1 · el escritorio: el iPad se levanta de la mesa y la foto se funde en el verde
+tl.shiftChildren(1.1);
+tl.set('.p0', { autoAlpha: 0 }, 0);
+tl.to(S, { desk: 0, duration: 1.0, ease: 'power3.inOut' }, 0.05);
+hidePanel('.pdesk', 0.05, 0.25);
+showPanel('.p0', 0.85, 0.3);
+tl.fromTo('h1 .ch', { yPercent: 115 }, { yPercent: 0, duration: 0.35, stagger: 0.008, ease: 'expo.out' }, 0.85);
+tl.to(annoOpacity, { ipad: 1, leoFeet: 1, duration: 0.15 }, 1.0);
 
 ScrollTrigger.create({
   trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: reduce ? true : 1.1,
@@ -328,12 +366,25 @@ function render() {
   mouse.sx += (mouse.x - mouse.sx) * 0.06;
   mouse.sy += (mouse.y - mouse.sy) * 0.06;
 
-  // composición
-  rig.position.x = S.hero * L.heroX;
-  ipad.rotation.set(S.rx + (reduce ? 0 : Math.sin(t * 0.6) * 0.015), S.ry + (reduce ? 0 : mouse.sx * 0.06 * S.hero), 0);
-  ipad.position.y = reduce ? 0 : Math.sin(t * 0.8) * 0.03 * S.hero;
-  leo.rotation.y = S.leoTurn + mouse.sx * 0.45;
-  leo.rotation.x = mouse.sy * 0.06;
+  // composición (k = cuánto queda de la escena del escritorio)
+  const k = S.desk, lerp = THREE.MathUtils.lerp;
+  const ke = k * k * (3 - 2 * k);
+  rig.position.x = S.hero * L.heroX * (1 - ke);
+  const floatY = reduce ? 0 : Math.sin(t * 0.8) * 0.03 * S.hero * (1 - k);
+  ipad.rotation.set(lerp(S.rx + (reduce ? 0 : Math.sin(t * 0.6) * 0.015 * (1 - k)), -Math.PI / 2, ke), lerp(S.ry + (reduce ? 0 : mouse.sx * 0.06 * S.hero), 0, ke), 0);
+  ipad.position.set(0, lerp(floatY, FLOOR + D / 2 + 0.01, ke) + Math.sin(Math.PI * k) * 0.9, lerp(0, 0.5, ke));
+  splash.material.opacity = THREE.MathUtils.clamp((k - 0.25) / 0.45, 0, 1);
+  deskShadow.material.opacity = ke * 0.85;
+  shadow.material.opacity = 1 - ke;
+  key.position.set(lerp(3, -5, ke), lerp(5, 7, ke), lerp(5, -2, ke));
+  const fig = lerp(1, 0.62, ke);                   // Leonardo: figurita sobre la mesa → tutor
+  leo.scale.setScalar(fig);
+  leo.position.set(lerp(leoBase.x, L.portrait ? 0.95 : 1.95, ke), FLOOR + (reduce ? 0 : Math.max(0, Math.sin(Math.PI * Math.min(1, k * 1.6))) * 0.35 * (k < 0.62 ? 1 : 0)), lerp(leoBase.z, L.portrait ? 2.35 : 1.15, ke));
+  leo.rotation.y = lerp(S.leoTurn + mouse.sx * 0.45, -0.45 + mouse.sx * 0.3, ke);
+  leo.rotation.x = mouse.sy * 0.06 * (1 - k);
+  desk.style.opacity = Math.min(1, k * 1.6);
+  desk.style.transform = `scale(${1 + (1 - k) * 0.18})`;
+  desk.style.filter = k < 0.999 ? `blur(${(1 - k) * 10}px)` : 'none';
   model.position.y = -box.min.y * s + (reduce ? 0 : Math.abs(Math.sin(t * 1.6)) * 0.015);
 
   // cámara (más lejos y con el foco más arriba en pantallas verticales)
@@ -342,8 +393,10 @@ function render() {
   const lift = L.lift + (L.portrait ? S.hero * 0.75 - S.end * 0.85 - S.focus * 0.75 : 0);
   const zoom = L.portrait ? THREE.MathUtils.lerp(L.zoom, 1.3, S.end) : L.zoom;
   const dx = L.portrait ? S.focus * 0.7 : 0;      // en vertical, Leonardo al centro
-  camera.position.set(S.cx * zoom * side + dx, S.cy + lift * 0.35, S.cz * zoom);
-  camera.lookAt(S.tx * side + dx, S.ty + lift, S.tz);
+  // cámara del escritorio: casi cenital, como la foto
+  const dz = L.portrait ? 1.18 : 1;
+  camera.position.set(lerp(S.cx * zoom * side + dx, 0, ke), lerp(S.cy + lift * 0.35, FLOOR + 9.6 * dz, ke), lerp(S.cz * zoom, 4.3 * dz, ke));
+  camera.lookAt(lerp(S.tx * side + dx, 0, ke), lerp(S.ty + lift, FLOOR, ke), lerp(S.tz, 0.42, ke));
 
   drawInk(S.ink);
   pencil.scale.setScalar(Math.max(0.0001, S.pen));
@@ -389,25 +442,11 @@ setProgress(1);
 const intro = gsap.timeline({ delay: 0.55 });
 intro.to('#loader .ring', { scale: 1.6, opacity: 0, transformOrigin: '50% 50%', duration: 0.8, ease: 'expo.in' })
   .to('#loader', { autoAlpha: 0, duration: 0.6, onComplete: () => document.body.classList.remove('loading') }, '-=0.25')
-  .from(rig.scale, { x: 0.82, y: 0.82, z: 0.82, duration: 1.4, ease: 'expo.out' }, '-=0.3')
-  .from(rig.rotation, { y: 0.6, duration: 1.6, ease: 'expo.out' }, '<')
-  .from('h1 .ch', { yPercent: 115, rotate: 6, duration: reduce ? 0.01 : 1.0, stagger: 0.028, ease: 'expo.out' }, '<0.1')
-  .from('.p0 .kicker, .p0 .lead, .p0 .store, .p0 .hint', { opacity: 0, y: 16, duration: 0.7, stagger: 0.08 }, '<0.4');
+  .from('#desk img', { scale: 1.08, duration: 1.8, ease: 'expo.out' }, '-=0.4')
+  .from(rig.position, { y: 0.6, duration: 1.4, ease: 'expo.out' }, '<0.1')
+  .from('.pdesk > *', { opacity: 0, y: 16, duration: 0.8, stagger: 0.1 }, '<0.5');
 
-// ---------- Selector de color ----------
-const DARK = { salvia: true, noche: true, blanco: false, pergamino: false };
-function applyTheme(t) {
-  theme = t;
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('codice-theme', t); } catch {}
-  $('#themeName').textContent = THEMES[t];
-  document.querySelectorAll('.themes button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
-  const dark = DARK[t];
-  body.material.color.set(dark ? 0x46443f : 0x2a2622);
-  rim.intensity = dark ? 1.6 : 0.4;
-  shadow.material.color.set(dark ? 0x000000 : 0xffffff);
-  shadow.material.opacity = dark ? 0.9 : 1;
-  document.querySelector('meta[name=theme-color]').content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-}
-document.querySelectorAll('.themes button').forEach((b) => b.addEventListener('click', () => applyTheme(b.dataset.t)));
-applyTheme(theme);
+// ---------- Tema: salvia (elegido) ----------
+body.material.color.set(0x3a3935);
+rim.intensity = 1.6;
+shadow.material.color.set(0x000000);
