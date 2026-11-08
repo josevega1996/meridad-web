@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F2EADA">
+<title>Meridad · El códice vivo</title>
+<meta name="description" content="Meridad es un cuaderno digital para iPad con Apple Pencil y un tutor de IA que te enseña.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="codice.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script type="module" src="codice.js"></script>
+</head>
+<body>
+
+<!-- Carga: la «M» se dibuja como un boceto con cotas -->
+<div id="loader" aria-hidden="true">
+  <svg viewBox="0 0 240 240" class="sketch">
+    <g class="guides">
+      <line x1="0" y1="40" x2="240" y2="40"/><line x1="0" y1="200" x2="240" y2="200"/>
+      <line x1="40" y1="0" x2="40" y2="240"/><line x1="200" y1="0" x2="200" y2="240"/>
+    </g>
+    <circle class="ring" cx="120" cy="120" r="80"/>
+    <path class="m" d="M72 164 V78 L120 136 L168 78 V164"/>
+    <g class="cotas">
+      <line x1="72" y1="186" x2="168" y2="186"/><line x1="72" y1="180" x2="72" y2="192"/><line x1="168" y1="180" x2="168" y2="192"/>
+      <line x1="190" y1="78" x2="190" y2="164"/><line x1="184" y1="78" x2="196" y2="78"/><line x1="184" y1="164" x2="196" y2="164"/>
+      <circle cx="120" cy="136" r="3"/><circle cx="72" cy="78" r="3"/><circle cx="168" cy="78" r="3"/>
+    </g>
+  </svg>
+  <p class="count"><span id="pct">0</span>%</p>
+  <p class="cap">Meridad · Códice I</p>
+</div>
+
+<div class="paper" aria-hidden="true"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<header class="bar">
+  <a class="brand" href="/"><img src="/assets/logo.png" alt="" width="30" height="30">Meridad</a>
+  <a class="store small" href="https://apps.apple.com/app/id6827345327">Descargar</a>
+</header>
+
+<!-- Textos de cada escena (fijos; los mueve la línea de tiempo) -->
+<div class="panels">
+  <section class="panel p0">
+    <p class="kicker">Cuaderno para iPad · con tutor de IA</p>
+    <h1 data-split>Escribe.<br>Entiende.<br>Recuerda.</h1>
+    <p class="lead">El cuaderno para Apple Pencil con un tutor que te enseña.</p>
+    <a class="store" href="https://apps.apple.com/app/id6827345327">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.670 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.41-3.64zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"/></svg>
+      <span><small>Descárgalo en la</small>App Store</span>
+    </a>
+    <p class="hint">Desliza para abrir el códice <span>↓</span></p>
+  </section>
+
+  <section class="panel p1">
+    <p class="fig">Fig. II — La tinta</p>
+    <h2>Escribe como<br>en papel.</h2>
+    <p>Tinta fluida con Apple Pencil, sobre el papel que elijas: rayas, cuadrícula, puntos o Cornell. Importa tus PDF y escribe encima.</p>
+  </section>
+
+  <section class="panel p2">
+    <p class="fig">Fig. III — Tu página</p>
+    <h2>Tu tutor ve<br>lo que escribes.</h2>
+    <p>Rodea algo con el lazo o pregúntale en voz alta. Entiende tu letra, tus esquemas y tus PDF, y te lo explica paso a paso.</p>
+  </section>
+
+  <section class="panel p3">
+    <p class="fig">Fig. IV — El tutor</p>
+    <h2>Te enseña.<br>No te hace la tarea.</h2>
+    <p>Te guía con preguntas y pistas, habla contigo y repasa a tu lado con quiz y tarjetas. Hoy te acompaña Leonardo; muy pronto podrás personalizar tu avatar.</p>
+  </section>
+
+  <section class="panel p4">
+    <p class="fig">Fin del códice</p>
+    <h2>Tu próximo examen<br>empieza aquí.</h2>
+    <a class="store" href="https://apps.apple.com/app/id6827345327">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.880-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.150 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.41-3.64zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.270z"/></svg>
+      <span><small>Descárgalo en la</small>App Store</span>
+    </a>
+    <p class="fine">Gratis para escribir · 7 días de prueba con el tutor</p>
+  </section>
+</div>
+
+<!-- Anotaciones técnicas que siguen puntos del 3D -->
+<div class="annos" aria-hidden="true">
+  <div class="anno left" data-anchor="ipad"><i></i><span>Fig. I · iPad + Apple Pencil</span></div>
+  <div class="anno left" data-anchor="leoFeet"><i></i><span>Tu tutor · avatar</span></div>
+  <div class="anno" data-anchor="pencil"><i></i><span>Tinta · 60 fps</span></div>
+  <div class="anno" data-anchor="nucleus"><i></i><span>Núcleo</span></div>
+  <div class="anno left" data-anchor="mito"><i></i><span>Mitocondria</span></div>
+  <div class="anno left" data-anchor="lift"><i></i><span>El tutor lee tu letra</span></div>
+  <div class="bubble" data-anchor="leoHead"><p id="quote">«La sabiduría es hija de la experiencia.»<cite>Leonardo da Vinci</cite></p></div>
+</div>
+
+<div id="story" aria-hidden="true"></div>
+
+<footer class="foot">
+  <span>© 2026 Meridad</span>
+  <nav><a href="mailto:soporte@meridad.app">Soporte</a><a href="/terminos/">Términos</a><a href="/privacidad/">Privacidad</a></nav>
+</footer>
+
+<noscript><p class="nogl">Esta página necesita JavaScript. <a href="/">Ver la versión clásica</a>.</p></noscript>
+</body>
+</html>

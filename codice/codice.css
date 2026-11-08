@@ -1,0 +1,101 @@
+/* El códice vivo · prototipo local */
+:root{--paper:#F2EADA;--paper2:#E8DDC7;--ink:#2B2622;--muted:#6E6352;--sanguine:#B5522E;--salvia:#3F6B4F;--line:rgba(43,38,34,.09);
+--serif:"Fraunces",Georgia,serif;--sans:"Nunito",system-ui,-apple-system,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.loading{overflow:hidden}
+a{color:inherit}
+
+/* Papel con retícula de boceto */
+.paper{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(120,90,50,.14) 100%),
+    linear-gradient(var(--line) 1px,transparent 1px) 0 0/80px 80px,
+    linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/80px 80px,
+    var(--paper)}
+.paper::before,.paper::after{content:"";position:absolute;width:26px;height:26px;border:1.5px solid var(--sanguine);opacity:.55}
+.paper::before{left:22px;bottom:22px;border-right:0;border-top:0}
+.paper::after{right:22px;bottom:22px;border-left:0;border-top:0}
+#gl{position:fixed;inset:0;width:100vw;height:100vh;z-index:1;display:block}
+
+/* Carga */
+#loader{position:fixed;inset:0;z-index:50;background:var(--paper);display:grid;place-items:center;align-content:center;gap:10px}
+#loader .sketch{width:min(56vw,260px);overflow:visible}
+#loader .guides line{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+#loader .ring{fill:none;stroke:var(--ink);stroke-width:1;stroke-dasharray:3 4;opacity:.6}
+#loader .m{fill:none;stroke:var(--ink);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:400;stroke-dashoffset:400}
+#loader .cotas line{stroke:var(--sanguine);stroke-width:1.5}
+#loader .cotas circle{fill:var(--sanguine)}
+#loader .count{margin:0;font:500 13px var(--mono);letter-spacing:.12em;color:var(--sanguine)}
+#loader .cap{margin:0;font:500 11px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+
+/* Barra */
+.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:18px clamp(16px,3vw,36px)}
+.brand{display:flex;align-items:center;gap:10px;font:600 21px var(--serif);text-decoration:none}
+.brand img{border-radius:22.5%;box-shadow:0 4px 10px rgba(40,30,20,.18)}
+
+/* Botón de la App Store */
+.store{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);text-decoration:none;border-radius:14px;padding:10px 20px 10px 16px;font:800 18px/1.05 var(--sans);transition:transform .2s ease,box-shadow .2s ease}
+.store:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(40,30,20,.25)}
+.store svg{width:26px;height:26px;fill:currentColor}
+.store small{display:block;font:600 11px var(--sans);opacity:.75}
+.store.small{padding:9px 16px;font-size:14px;border-radius:12px}
+
+/* Paneles de texto */
+.panels{position:fixed;inset:0;z-index:10;pointer-events:none}
+.panel{position:absolute;opacity:0;visibility:hidden;max-width:min(470px,90vw)}
+.panel a{pointer-events:auto}
+.p0{left:clamp(16px,7vw,110px);top:50%;transform:translateY(-50%);opacity:1;visibility:visible;max-width:560px}
+.p1{right:clamp(16px,6vw,96px);bottom:14vh}
+.p2{right:clamp(16px,6vw,96px);top:22vh}
+.p3{left:clamp(16px,7vw,110px);top:50%;transform:translateY(-50%)}
+.p4{left:50%;top:13vh;transform:translateX(-50%);text-align:center;max-width:640px}
+.kicker,.fig{font:500 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--sanguine);margin:0 0 14px}
+.fig::before{content:"";display:inline-block;width:28px;height:1px;background:currentColor;vertical-align:middle;margin-right:10px}
+h1{font:600 clamp(54px,8.4vw,128px)/.92 var(--serif);letter-spacing:-.035em;margin:0 0 22px}
+h1 .line{display:block;overflow:hidden;padding-bottom:.06em}
+h1 .ch{display:inline-block;will-change:transform}
+h1 .line:nth-child(2){color:var(--salvia)}
+h2{font:600 clamp(36px,4.6vw,64px)/1 var(--serif);letter-spacing:-.025em;margin:0 0 16px}
+.panel p{margin:0 0 18px;font-size:18px;color:var(--muted)}
+.lead{font-size:20px!important;max-width:400px}
+.hint{font:500 12px var(--mono)!important;letter-spacing:.14em;text-transform:uppercase;margin-top:26px!important}
+.hint span{display:inline-block;animation:nudge 1.6s ease-in-out infinite}
+.fine{font:500 12px var(--mono)!important;letter-spacing:.1em;margin-top:14px!important}
+@keyframes nudge{50%{transform:translateY(5px)}}
+
+/* Anotaciones */
+.annos{position:fixed;inset:0;z-index:9;pointer-events:none}
+.anno{position:absolute;left:0;top:0;opacity:0;will-change:transform}
+.anno i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;border:1.5px solid var(--sanguine);background:var(--paper)}
+.anno i::after{content:"";position:absolute;left:3px;top:3px;width:2px;height:2px;border-radius:50%;background:var(--sanguine)}
+.anno span{position:absolute;left:28px;top:-34px;white-space:nowrap;font:500 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--sanguine);padding:4px 8px;border:1px solid rgba(181,82,46,.5);background:rgba(242,234,218,.85)}
+.anno span::before{content:"";position:absolute;left:-24px;top:100%;width:30px;height:1px;background:var(--sanguine);transform-origin:right;transform:rotate(-48deg) translate(4px,8px)}
+.anno.left span{left:auto;right:28px}
+.anno.left span::before{left:auto;right:-24px;transform-origin:left;transform:rotate(48deg) translate(-4px,8px)}
+.bubble{position:absolute;left:0;top:0;opacity:0;will-change:transform}
+.bubble p{position:absolute;right:30px;bottom:24px;width:min(300px,70vw);margin:0;background:#FFFDF8;border:1px solid #E3D8C3;border-radius:20px 20px 4px 20px;padding:14px 18px;font:600 16px/1.45 var(--sans);box-shadow:0 14px 34px rgba(40,30,20,.16);transition:opacity .35s,transform .35s}
+.bubble p.out{opacity:0;transform:translateY(4px)}
+.bubble cite{display:block;margin-top:6px;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;font-style:normal;color:var(--sanguine)}
+
+/* Recorrido y pie */
+#story{position:relative;z-index:0;height:720vh}
+.foot{position:relative;z-index:12;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:22px clamp(16px,3vw,36px);font:500 12px var(--mono);letter-spacing:.08em;color:var(--muted);background:var(--paper);border-top:1px solid var(--line)}
+.foot nav{display:flex;gap:20px}
+.foot a{text-decoration:none}
+.nogl{position:fixed;inset:auto 0 40px;z-index:60;text-align:center}
+
+/* Teléfono y tableta vertical: texto arriba, 3D abajo */
+@media (max-aspect-ratio:1/1){
+  .p0{top:92px;transform:none;left:16px;right:16px}
+  .p0 .lead{font-size:17px!important}
+  .p0 .hint{display:none}
+  .p1,.p2,.p3{left:16px;right:16px;top:86px;bottom:auto;transform:none}
+  .panel p{font-size:16px}
+  h1{font-size:clamp(46px,13vw,96px)}
+  h2{font-size:clamp(32px,9vw,54px)}
+  .p4{top:92px;width:calc(100% - 32px)}
+  .anno span{font-size:10px}
+  .anno[data-anchor=ipad],.anno[data-anchor=leoFeet],.anno[data-anchor=lift]{display:none}
+  .bubble p{width:min(240px,62vw);font-size:14px}
+}
