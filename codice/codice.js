@@ -5,6 +5,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const touch = matchMedia('(pointer: coarse)').matches;           // celular / iPad: el dedo lanza el scroll más lejos
 const $ = (s) => document.querySelector(s);
 document.body.classList.add('loading');
 
@@ -60,6 +61,7 @@ const PHOTOS = {
 let photoKey = 'a';
 const PHOTO = { fill: 1 };
 const flash = document.getElementById('flash');
+const p3 = document.querySelector('.p3');
 const glow = document.getElementById('glow');
 let glIntro = 0;
 function placePhoto() {
@@ -488,7 +490,7 @@ tl.to(annoOpacity, { av: 0, leoAv: 0, duration: 0.2 }, 8.35);
 tl.to({}, { duration: 0.2 }, 8.55);
 
 ScrollTrigger.create({
-  trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: reduce ? true : 1.4,
+  trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: reduce ? true : (touch ? 2.2 : 1.4),
   onUpdate: (st) => tl.progress(st.progress),
 });
 
@@ -580,7 +582,9 @@ function render() {
   leo.rotation.y = S.leoTurn + mouse.sx * 0.45;
   leo.rotation.x = mouse.sy * 0.06;
   // el iPad se aparta hacia arriba para dejar ver la fila de avatares
-  ipad.position.y += (L.portrait ? Math.max(S.away, S.focus) * 6 : S.away * 4.2);   // en vertical también se aparta en el primer plano del tutor
+  const gone = L.portrait ? Math.max(S.away, S.focus) : S.away;     // en vertical también se aparta en el primer plano del tutor
+  ipad.position.y += gone * (L.portrait ? 6 : 4.2);
+  ipad.visible = !(L.portrait && gone > 0.8);
   avatars.forEach((a, i) => {
     const si = sm(S.av, i * 0.18, i * 0.18 + 0.5);
     a.g.visible = si > 0.001;
@@ -593,8 +597,9 @@ function render() {
   // cámara (más lejos y con el foco más arriba en pantallas verticales)
   // en vertical: sujetos centrados y más abajo (el texto va arriba)
   const side = THREE.MathUtils.lerp(L.side ?? 1, 1, S.focus);
-  const lift = L.lift + (L.portrait ? S.hero * 0.75 - S.end * 0.85 - S.focus * 0.75 + S.away * 0.55 : 0);
-  const zoom = L.portrait ? THREE.MathUtils.lerp(L.zoom, 1.3, S.end) : L.zoom;
+  const short = L.portrait ? clamp((2.05 - innerHeight / innerWidth) / 0.4, 0, 1) : 0;   // 1 = celular con poca altura visible
+  const lift = L.lift + (L.portrait ? S.hero * 0.75 - S.end * 0.85 - S.focus * (0.75 - 0.5 * short) + S.away * (0.55 + 0.45 * short) : 0);
+  const zoom = L.portrait ? THREE.MathUtils.lerp(L.zoom, L.zoom > 1.5 ? 1.75 : 1.4, S.end) : L.zoom;
   // en vertical: Leonardo (o la fila de avatares) al centro de la pantalla
   const pcx = L.portrait ? lerp(headLocal.x, -2.85, S.away) : 0;
   const dx = 0;
@@ -603,7 +608,7 @@ function render() {
   const fillD = Math.min((SH / 2) / vt, (SW / 2) / (vt * camera.aspect)) * 0.97 + D / 2;
   let camX = S.cx * zoom * side, tgtX = S.tx * side;
   if (L.portrait) { camX = lerp(camX, pcx, S.focus); tgtX = lerp(tgtX, pcx, S.focus); }
-  const camZ = S.cz * zoom * (L.portrait ? 1 + S.away * 0.2 : 1);
+  const camZ = S.cz * zoom * (L.portrait ? 1 + S.away * 0.2 + S.focus * (1 - S.away) * 0.3 * short : 1);
   camera.position.set(lerp(camX, 0, pull), lerp(S.cy + lift * 0.35, 0, pull), lerp(camZ, fillD, pull));
   camera.lookAt(lerp(tgtX, 0, pull), lerp(S.ty + lift, 0, pull), lerp(S.tz, 0, pull));
 
@@ -621,7 +626,12 @@ function render() {
     if (o <= 0.001) { if (a.o !== 0) { a.el.style.opacity = 0; a.o = 0; } continue; }
     const p = anchorWorld(a.key).project(camera);
     const x = (p.x * 0.5 + 0.5) * innerWidth, y = (-p.y * 0.5 + 0.5) * innerHeight;
-    a.el.style.transform = `translate(${x}px,${y}px)`;
+    let X = x, Y = y;
+    if (a.key === 'leoHead' && L.portrait) {           // centrada y siempre debajo del texto del panel
+      const pb = p3.getBoundingClientRect().bottom, bh = a.el.firstElementChild.offsetHeight;
+      X = innerWidth / 2; Y = Math.max(y - 6, pb + 14 + bh);
+    }
+    a.el.style.transform = `translate(${X}px,${Y}px)`;
     if (a.el.classList.contains('anno')) {
       const span = a.el.lastElementChild, wl = span.offsetWidth + 40;
       if (x + wl > innerWidth - 8) a.el.classList.add('left');

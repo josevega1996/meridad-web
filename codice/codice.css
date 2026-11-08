@@ -109,6 +109,7 @@ h2{font:600 clamp(36px,4.6vw,64px)/1 var(--serif);letter-spacing:-.025em;margin:
 
 /* Espaciadores que controlan el scroll del 3D */
 #story{position:relative;z-index:0;height:900vh}
+@media (pointer:coarse){#story{height:1350vh}}   /* con el dedo: recorrido más largo = movimiento más pausado */
 #finale{position:relative;z-index:0;height:170vh}
 
 /* ---------- Secciones de contenido (sobre el 3D atenuado) ---------- */
@@ -218,7 +219,6 @@ h2{font:600 clamp(36px,4.6vw,64px)/1 var(--serif);letter-spacing:-.025em;margin:
   .facts li+li::before{display:none}
   .anno span{font-size:10px}
   .anno[data-anchor=ipad],.anno[data-anchor=leoFeet],.anno[data-anchor=lift]{display:none}
-  .bubble{transform:translate(50vw,44vh)!important}
   .anno[data-anchor=av0],.anno[data-anchor=av2],.anno[data-anchor=leoAv]{display:none}
   .bubble p{right:auto;left:0;transform:translateX(-50%);bottom:0;width:min(280px,80vw);font-size:14px;border-radius:20px}
   .bubble p.out{transform:translate(-50%,4px)}
