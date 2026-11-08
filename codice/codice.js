@@ -8,6 +8,13 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s) => document.querySelector(s);
 document.body.classList.add('loading');
 
+// ---------- Tema de color (selector del prototipo) ----------
+const THEMES = { salvia: 'Salvia', noche: 'Noche', blanco: 'Blanco', pergamino: 'Pergamino' };
+let theme = 'salvia';
+try { theme = localStorage.getItem('codice-theme') || theme; } catch {}
+if (!THEMES[theme]) theme = 'salvia';
+document.documentElement.dataset.theme = theme;
+
 // GSAP llega con «defer»; el módulo puede ejecutarse antes
 await new Promise((r) => (window.gsap && window.ScrollTrigger ? r() : addEventListener('DOMContentLoaded', r)));
 const { gsap, ScrollTrigger } = window;
@@ -31,7 +38,9 @@ scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
 const key = new THREE.DirectionalLight(0xfff0dc, 1.4);
 key.position.set(3, 5, 5);
-scene.add(key, new THREE.HemisphereLight(0xfff8ee, 0xcbb894, 0.5));
+const rim = new THREE.DirectionalLight(0xdfffe8, 0.4);
+rim.position.set(-4, 3, -5);
+scene.add(key, rim, new THREE.HemisphereLight(0xfff8ee, 0xcbb894, 0.5));
 
 // ---------- Colores del códice ----------
 const C = { ink: 0x2b2622, salvia: 0x3f6b4f, sanguine: 0xb5522e, violet: 0x7a4e8c, ochre: 0xc9772e };
@@ -257,15 +266,43 @@ tl.to(S, { cx: headLocal.x - 0.25, cy: headLocal.y + 0.05, cz: headLocal.z + 3.7
 showPanel('.p3', 4.75);
 anno('leoHead', 4.9, 5.75);
 hidePanel('.p3', 5.65);
-// 5.3 → 6.5 · cierre: vista general y llamada a descargar
-tl.to(S, { hero: 0, cx: 0, cy: 0.7, cz: 11.6, tx: -0.2, ty: 1.35, tz: 0, rx: -0.12, ry: -0.3, lift: 0, leoTurn: 0.35, focus: 0, end: 1, duration: 1.0 }, 5.7);
-showPanel('.p4', 6.3);
-tl.to({}, { duration: 0.4 }, 6.5);
+tl.to({}, { duration: 0.3 }, 5.9);
 
 ScrollTrigger.create({
   trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: reduce ? true : 1.1,
   onUpdate: (st) => tl.progress(st.progress),
 });
+
+// ---------- El 3D se atenúa mientras lees el contenido ----------
+const glFade = { o: 1 };
+gsap.to(glFade, { o: 0, ease: 'none', scrollTrigger: { trigger: '.content', start: 'top bottom', end: 'top 35%', scrub: true } });
+
+// Galería horizontal fijada
+const track = document.querySelector('.track');
+gsap.to(track, {
+  x: () => -(track.scrollWidth - innerWidth), ease: 'none',
+  scrollTrigger: { trigger: '.gallery', pin: true, scrub: 1, end: () => '+=' + (track.scrollWidth - innerWidth), invalidateOnRefresh: true },
+});
+
+// Frase de privacidad: se enciende palabra por palabra
+document.querySelectorAll('[data-words]').forEach((el) => {
+  el.innerHTML = el.textContent.split(' ').map((w) => `<span class="w">${w}</span>`).join(' ');
+  gsap.to(el.querySelectorAll('.w'), { opacity: 1, stagger: 0.1, ease: 'none', scrollTrigger: { trigger: el, start: 'top 80%', end: 'bottom 40%', scrub: true } });
+});
+
+// Apariciones suaves
+gsap.set('.reveal', { opacity: 0, y: 40 });
+ScrollTrigger.batch('.reveal', {
+  start: 'top 88%',
+  onEnter: (els) => gsap.to(els, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'expo.out', overwrite: true }),
+});
+
+// ---------- Cierre: vuelve el 3D y la llamada a descargar ----------
+gsap.fromTo(glFade, { o: 0 }, { o: 1, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '#finale', start: 'top bottom', end: 'top 30%', scrub: true } });
+const tl2 = gsap.timeline({ paused: true, defaults: { ease: 'power2.inOut' } });
+tl2.to(S, { hero: 0, cx: 0, cy: 0.7, cz: 11.6, tx: -0.2, ty: 1.35, tz: 0, rx: -0.12, ry: -0.3, lift: 0, leoTurn: 0.35, focus: 0, end: 1, duration: 1 }, 0)
+  .fromTo('.p4', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 0.6);
+ScrollTrigger.create({ trigger: '#finale', start: 'top 70%', end: 'bottom bottom', scrub: reduce ? true : 1, onUpdate: (st) => tl2.progress(st.progress) });
 
 // ---------- Bucle de dibujo ----------
 const clock = new THREE.Clock();
@@ -312,11 +349,12 @@ function render() {
   pencil.scale.setScalar(Math.max(0.0001, S.pen));
 
   scene.updateMatrixWorld();
-  renderer.render(scene, camera);
+  canvas.style.opacity = glFade.o;
+  if (glFade.o > 0.01) renderer.render(scene, camera);
 
   // anotaciones en pantalla
   for (const a of annos) {
-    const o = annoOpacity[a.key] ?? 0;
+    const o = (annoOpacity[a.key] ?? 0) * glFade.o;
     if (o <= 0.001) { if (a.o !== 0) { a.el.style.opacity = 0; a.o = 0; } continue; }
     const p = anchorWorld(a.key).project(camera);
     const x = (p.x * 0.5 + 0.5) * innerWidth, y = (-p.y * 0.5 + 0.5) * innerHeight;
@@ -355,3 +393,21 @@ intro.to('#loader .ring', { scale: 1.6, opacity: 0, transformOrigin: '50% 50%', 
   .from(rig.rotation, { y: 0.6, duration: 1.6, ease: 'expo.out' }, '<')
   .from('h1 .ch', { yPercent: 115, rotate: 6, duration: reduce ? 0.01 : 1.0, stagger: 0.028, ease: 'expo.out' }, '<0.1')
   .from('.p0 .kicker, .p0 .lead, .p0 .store, .p0 .hint', { opacity: 0, y: 16, duration: 0.7, stagger: 0.08 }, '<0.4');
+
+// ---------- Selector de color ----------
+const DARK = { salvia: true, noche: true, blanco: false, pergamino: false };
+function applyTheme(t) {
+  theme = t;
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('codice-theme', t); } catch {}
+  $('#themeName').textContent = THEMES[t];
+  document.querySelectorAll('.themes button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
+  const dark = DARK[t];
+  body.material.color.set(dark ? 0x46443f : 0x2a2622);
+  rim.intensity = dark ? 1.6 : 0.4;
+  shadow.material.color.set(dark ? 0x000000 : 0xffffff);
+  shadow.material.opacity = dark ? 0.9 : 1;
+  document.querySelector('meta[name=theme-color]').content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+}
+document.querySelectorAll('.themes button').forEach((b) => b.addEventListener('click', () => applyTheme(b.dataset.t)));
+applyTheme(theme);
