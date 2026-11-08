@@ -24,6 +24,7 @@ img{max-width:100%;height:auto;display:block}
 .paper::before{left:22px;bottom:22px;border-right:0;border-top:0}
 .paper::after{right:22px;bottom:22px;border-left:0;border-top:0}
 #desk{position:fixed;inset:0;z-index:2;overflow:hidden;pointer-events:none;will-change:transform,opacity,filter}
+#desk picture{display:contents}
 #desk img{width:100%;height:100%;object-fit:cover;object-position:50% 50%}
 #desk::after{content:"";position:absolute;inset:0;background:radial-gradient(130% 100% at 50% 45%,transparent 55%,rgba(10,20,14,.55) 100%)}
 #flash{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;background:radial-gradient(120% 100% at 50% 50%,#FBF7EE,#F0E8D8)}

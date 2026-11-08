@@ -76,9 +76,7 @@ function placePhoto() {
 }
 function setPhoto(key) {
   photoKey = key;
-  const img = desk.querySelector('img'), ph = PHOTOS[key];
-  img.srcset = `${ph.src}-1100.webp 1100w, ${ph.src}.webp 2000w`;
-  img.src = `${ph.src}.webp`;
+  // la foto la elige el HTML (<picture>): 1100 px en celular, 2000 px en pantallas grandes
   placePhoto();
 }
 const rig = new THREE.Group();          // todo lo que se mueve junto
@@ -633,7 +631,7 @@ function render() {
     }
     a.el.style.transform = `translate(${X}px,${Y}px)`;
     if (a.el.classList.contains('anno')) {
-      const span = a.el.lastElementChild, wl = span.offsetWidth + 40;
+      const wl = (a.w ||= a.el.lastElementChild.offsetWidth + 40);   // se mide una sola vez (medir en cada fotograma fuerza recalcular la página)
       if (x + wl > innerWidth - 8) a.el.classList.add('left');
       else if (x - wl < 8) a.el.classList.remove('left');
     }
@@ -660,6 +658,22 @@ if (!reduce) setInterval(() => {
 // ---------- Entrada ----------
 
 setPhoto(photoKey);
+// Precalentar el 3D (shaders y texturas) mientras está la pantalla de carga:
+// sin esto, el primer dibujo ocurre justo al pasar de la foto al 3D y da un tirón (más notorio en celular)
+{
+  const hidden = avatars.map((a) => a.g.visible);
+  avatars.forEach((a) => { a.g.visible = true; });
+  canvas.style.opacity = 0;
+  const culled = [];
+  scene.traverse((o) => { if (o.isMesh || o.isLine) { culled.push([o, o.frustumCulled]); o.frustumCulled = false; } });   // que se suba TODA la geometría
+  const ls = leo.scale.x; leo.scale.setScalar(1);
+  renderer.compile(scene, camera);
+  scene.traverse((o) => { const m = o.material; if (m && m.map) renderer.initTexture(m.map); });
+  renderer.render(scene, camera);
+  culled.forEach(([o, f]) => { o.frustumCulled = f; });
+  leo.scale.setScalar(ls);
+  avatars.forEach((a, i) => { a.g.visible = hidden[i]; });
+}
 render();
 setProgress(1);
 const intro = gsap.timeline({ delay: 0.55 });
