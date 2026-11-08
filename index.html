@@ -3,9 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#FBF8F0" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1F1B16" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#21392A">
 <title>Meridad · Cuaderno para iPad con un tutor que te enseña</title>
 <meta name="description" content="Meridad es un cuaderno digital para iPad con Apple Pencil. Escribe como en papel, anota tus PDF y estudia con un tutor de IA que ve tu página y te explica.">
 <link rel="canonical" href="https://meridad.app/">
@@ -18,186 +16,211 @@
 <meta property="og:locale" content="es_MX">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="apple-itunes-app" content="app-id=6827345327">
-<link rel="icon" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/logo.png">
+<link rel="icon" href="/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/assets/landing.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="/codice/codice.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script type="module" src="/codice/codice.js"></script>
 </head>
 <body>
 
-<header class="top" id="top">
-  <div class="wrap">
-    <a class="brand" href="/"><img src="/assets/logo.png" alt="" width="34" height="34">Meridad</a>
-    <nav aria-label="Secciones">
-      <a href="#tutor">Tu tutor</a>
-      <a href="#funciones">Funciones</a>
-      <a href="#privacidad">Privacidad</a>
-      <a href="#planes">Planes</a>
-      <a href="#preguntas">Preguntas</a>
-    </nav>
-    <a class="btn btn-primary" href="https://apps.apple.com/app/id6827345327">Descargar</a>
-  </div>
+<!-- Carga: la «M» se dibuja como un boceto con cotas -->
+<div id="loader" aria-hidden="true">
+  <svg viewBox="0 0 240 240" class="sketch">
+    <g class="guides">
+      <line x1="0" y1="40" x2="240" y2="40"/><line x1="0" y1="200" x2="240" y2="200"/>
+      <line x1="40" y1="0" x2="40" y2="240"/><line x1="200" y1="0" x2="200" y2="240"/>
+    </g>
+    <circle class="ring" cx="120" cy="120" r="80"/>
+    <path class="m" d="M72 164 V78 L120 136 L168 78 V164"/>
+    <g class="cotas">
+      <line x1="72" y1="186" x2="168" y2="186"/><line x1="72" y1="180" x2="72" y2="192"/><line x1="168" y1="180" x2="168" y2="192"/>
+      <line x1="190" y1="78" x2="190" y2="164"/><line x1="184" y1="78" x2="196" y2="78"/><line x1="184" y1="164" x2="196" y2="164"/>
+      <circle cx="120" cy="136" r="3"/><circle cx="72" cy="78" r="3"/><circle cx="168" cy="78" r="3"/>
+    </g>
+  </svg>
+  <p class="count"><span id="pct">0</span>%</p>
+  <p class="cap">Meridad · Códice I</p>
+</div>
+
+<div class="paper" aria-hidden="true"></div>
+<div id="desk" aria-hidden="true"><img src="/codice/escritorio-a.webp" sizes="100vw" alt="" fetchpriority="high"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="flash" aria-hidden="true"></div>
+<div id="glow" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="brand" href="/"><img src="/assets/logo.png" alt="" width="30" height="30">Meridad</a>
+  <nav aria-label="Secciones"><a href="#funciones">Funciones</a><a href="#privacidad">Privacidad</a><a href="#planes">Planes</a><a href="#preguntas">Preguntas</a></nav>
+  <a class="store small" href="https://apps.apple.com/app/id6827345327">Descargar</a>
 </header>
 
-<main>
-  <section class="hero">
+<!-- Textos de cada escena (fijos; los mueve la línea de tiempo) -->
+<div class="panels">
+  <section class="panel pdesk">
+    <p class="kicker">Cuaderno para iPad · con tutor de IA</p>
+    <p class="hint">Desliza para empezar <span>↓</span></p>
+  </section>
+
+  <section class="panel p0">
+    <p class="kicker">Cuaderno para iPad · con tutor de IA</p>
+    <h1 data-split>Escribe.<br>Entiende.<br>Recuerda.</h1>
+    <p class="lead">El cuaderno para Apple Pencil con un tutor que te enseña.</p>
+    <a class="store" href="https://apps.apple.com/app/id6827345327">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.41-3.64zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"/></svg>
+      <span><small>Descárgalo en la</small>App Store</span>
+    </a>
+    <p class="hint">Desliza para abrir el códice <span>↓</span></p>
+  </section>
+
+  <section class="panel p1">
+    <p class="fig">Fig. II — La tinta</p>
+    <h2>Escribe como<br>en papel.</h2>
+    <p>Tinta fluida con Apple Pencil, sobre el papel que elijas: rayas, cuadrícula, puntos o Cornell. Importa tus PDF y escribe encima.</p>
+  </section>
+
+  <section class="panel p2">
+    <p class="fig">Fig. III — Tu página</p>
+    <h2>Tu tutor ve<br>lo que escribes.</h2>
+    <p>Rodea una fórmula con el lazo o pregúntale en voz alta. Entiende tu letra, tus ecuaciones, tus esquemas y tus PDF, y te lo explica paso a paso.</p>
+  </section>
+
+  <section class="panel p3">
+    <p class="fig">Fig. IV — El tutor</p>
+    <h2>Te enseña.<br>No te hace la tarea.</h2>
+    <p>Te guía con preguntas y pistas, habla contigo y repasa a tu lado con quiz y tarjetas.</p>
+  </section>
+
+  <section class="panel pav">
+    <p class="fig">Fig. V — Tu avatar</p>
+    <h2>Tu tutor,<br>con la cara que elijas.</h2>
+    <p>Hoy te acompaña Leonardo. En la próxima actualización podrás personalizar tu avatar a tu gusto.</p>
+    <span class="soon">Próxima actualización</span>
+  </section>
+
+  <section class="panel p4">
+    <p class="fig">Fig. XI — Tu turno</p>
+    <h2 class="mega">Lo que descubras hoy,<br>se queda contigo.</h2>
+  </section>
+
+  <section class="panel p5">
+    <a class="store" href="https://apps.apple.com/app/id6827345327">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.41-3.64zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"/></svg>
+      <span><small>Descárgalo en la</small>App Store</span>
+    </a>
+    <ul class="facts"><li>iPad + Apple Pencil</li><li>Gratis para escribir</li><li>7 días con el tutor</li></ul>
+  </section>
+</div>
+
+<!-- Anotaciones técnicas que siguen puntos del 3D -->
+<div class="annos" aria-hidden="true">
+  <div class="anno left" data-anchor="ipad"><i></i><span>Fig. I · iPad + Apple Pencil</span></div>
+  <div class="anno left" data-anchor="leoFeet"><i></i><span>Tu tutor · avatar</span></div>
+  <div class="anno" data-anchor="pencil"><i></i><span>Tinta · 60 fps</span></div>
+  <div class="anno" data-anchor="nucleus"><i></i><span>Perfil alar · sustentación</span></div>
+  <div class="anno" data-anchor="mito"><i></i><span>Vórtice · turbulencia</span></div>
+  <div class="anno" data-anchor="lift"><i></i><span>El tutor lee tus fórmulas</span></div>
+  <div class="anno" data-anchor="leoAv"><i></i><span>Leonardo · hoy</span></div>
+  <div class="anno" data-anchor="av0"><i></i><span>Próximamente</span></div>
+  <div class="anno" data-anchor="av1"><i></i><span>Próximamente</span></div>
+  <div class="anno" data-anchor="av2"><i></i><span>Próximamente</span></div>
+  <div class="bubble" data-anchor="leoHead"><p id="quote">«La sabiduría es hija de la experiencia.»<cite>Leonardo da Vinci</cite></p></div>
+</div>
+
+<div id="story" aria-hidden="true"></div>
+
+<main class="content">
+  <div class="marquee" aria-hidden="true"><div>
+    <span>Hecho para Apple Pencil</span><span>Tus notas se quedan en tu iPad</span><span>La IA solo cuando tú la activas</span><span>En español</span>
+    <span>Hecho para Apple Pencil</span><span>Tus notas se quedan en tu iPad</span><span>La IA solo cuando tú la activas</span><span>En español</span>
+  </div></div>
+
+  <section class="sec" id="funciones">
     <div class="wrap">
-      <div>
-        <p class="eyebrow">Cuaderno digital para iPad</p>
-        <h1>Escribe, entiende y <em>recuerda</em>.</h1>
-        <p class="lead">Meridad es un cuaderno para Apple Pencil con un tutor que te acompaña. Ve la página que estás escribiendo, te explica lo que no entiendes y te ayuda a repasar.</p>
-        <div class="cta" id="descargar">
-          <a class="btn btn-store" href="https://apps.apple.com/app/id6827345327">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.41-3.64zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"/></svg>
-            <div><small>Descárgalo en la</small><span>App Store</span></div>
-          </a>
-          <a class="btn btn-ghost" href="#tutor">Conoce a tu tutor</a>
-        </div>
-        <p class="fine">Gratis para escribir. 7 días de prueba con todas las funciones de IA.</p>
+      <div class="sec-head reveal">
+        <p class="fig">Fig. VI — Funciones</p>
+        <h2>Todo lo que esperas de un buen cuaderno.</h2>
+        <p>Y unas cuantas cosas más.</p>
       </div>
-      <div class="stage">
-        <div class="ipad"><img src="/assets/03-tutor.webp" alt="Meridad en un iPad: una página sobre la célula y el panel del tutor abierto" width="1100" height="1467" fetchpriority="high"></div>
-        <p class="bubble" id="bubble" aria-live="polite">«La sabiduría es hija de la experiencia.»<cite>Leonardo da Vinci</cite></p>
-        <img class="leo" src="/assets/leonardo.webp" alt="Leonardo, el avatar del tutor de Meridad" width="560" height="855">
+      <div class="plates">
+        <article class="plate reveal"><span class="no">VI.1</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div><h3>Tinta fluida</h3><p>Pluma, resaltador, goma, formas, texto y objetos que mueves y giras.</p></article>
+        <article class="plate reveal"><span class="no">VI.2</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><h3>El papel que quieras</h3><p>Rayas, cuadrícula, puntos, Cornell, pentagrama y más.</p></article>
+        <article class="plate reveal"><span class="no">VI.3</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg></div><h3>PDF y fotos</h3><p>Importa tus PDF o fotos de la pizarra y escribe encima.</p></article>
+        <article class="plate reveal"><span class="no">VI.4</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><h3>Busca en tu letra</h3><p>Encuentra cualquier cosa en títulos, texto, PDF y en lo que escribiste a mano.</p></article>
+        <article class="plate reveal"><span class="no">VI.5</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></div><h3>Ordenado a tu manera</h3><p>Carpetas, etiquetas, favoritos y ambientes para estudio, trabajo e ideas.</p></article>
+        <article class="plate reveal"><span class="no">VI.6</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div><h3>Calendario y recordatorios</h3><p>¿Anotaste la fecha del examen? El tutor te propone el evento y tú lo apruebas.</p></article>
+        <article class="plate reveal"><span class="no">VI.7</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z"/></svg></div><h3>Quiz y tarjetas</h3><p>Convierte tus apuntes en preguntas y tarjetas de repaso; repasar no usa internet.</p></article>
+        <article class="plate reveal"><span class="no">VI.8</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg></div><h3>Conversa en voz alta</h3><p>Pregúntale hablando y escucha su respuesta con voz natural.</p></article>
+        <article class="plate reveal"><span class="no">VI.9</span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3Z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5Z"/><path d="m2 2 7.6 7.6"/><circle cx="11" cy="11" r="2"/></svg></div><h3>Dibuja para explicarte</h3><p>Pídele un dibujo al tutor y pégalo en tu cuaderno.</p></article>
       </div>
     </div>
   </section>
 
-  <div class="strip">
-    <ul class="wrap">
-      <li>Hecho para Apple Pencil</li>
-      <li>Tus notas se quedan en tu iPad</li>
-      <li>La IA solo cuando tú la activas</li>
-      <li>En español</li>
-    </ul>
-  </div>
-
-  <section>
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Cómo funciona</p>
-        <h2>Tú escribes. Tu tutor te ayuda a entender.</h2>
+  <section class="gallery" id="galeria" aria-label="Capturas de la app">
+    <div class="track">
+      <div class="intro">
+        <p class="fig">Fig. VII — La app</p>
+        <h2>Así se ve en tu iPad.</h2>
+        <p class="lead" style="color:var(--muted)">Capturas reales de Meridad.</p>
       </div>
-      <div class="steps">
-        <div class="step"><h3>Escribe como en papel</h3><p>Toma apuntes a mano, dibuja esquemas o importa el PDF de la clase y escribe encima.</p></div>
-        <div class="step"><h3>Pregunta sin salir de la página</h3><p>Rodea algo con el lazo o pregúntale en voz alta. Tu tutor ve lo que tienes abierto y te lo explica paso a paso.</p></div>
-        <div class="step"><h3>Repasa y recuerda</h3><p>Convierte tus apuntes en un quiz o en tarjetas de repaso para llegar al examen con todo claro.</p></div>
-      </div>
+      <figure class="shot"><div class="frame"><img src="/assets/02-cuaderno.webp" alt="Página de un cuaderno con apuntes y un esquema de la célula" width="1100" height="1467" loading="lazy"></div><figcaption><b>VII.1</b>Tus apuntes, como en papel</figcaption></figure>
+      <figure class="shot"><div class="frame"><img src="/assets/03-tutor.webp" alt="El tutor abierto junto a la página" width="1100" height="1467" loading="lazy"></div><figcaption><b>VII.2</b>El tutor junto a tu página</figcaption></figure>
+      <figure class="shot"><div class="frame"><img src="/assets/01-biblioteca.webp" alt="Biblioteca con carpetas y cuadernos" width="1100" height="1467" loading="lazy"></div><figcaption><b>VII.3</b>Tu biblioteca, ordenada</figcaption></figure>
     </div>
   </section>
 
-  <section class="tutor" id="tutor">
+  <section class="sec" id="privacidad">
     <div class="wrap">
-      <div class="avatars" aria-label="Avatares del tutor">
-        <div class="avatar current"><img src="/assets/leonardo.webp" alt="Leonardo" width="560" height="855" loading="lazy"><b>Leonardo</b><span>Disponible</span></div>
-        <div class="avatar soon">
-          <div class="faces" aria-hidden="true"><i></i><i></i><i></i></div>
-          <b>Tu propio avatar</b>
-          <p>Muy pronto podrás personalizar el avatar de tu tutor a tu gusto.</p>
-          <span>Próxima actualización</span>
-        </div>
-      </div>
-      <div>
-        <p class="eyebrow">Tu tutor</p>
-        <h2>Un tutor que te enseña en vez de hacerte la tarea</h2>
-        <p class="lead">Te guía con preguntas, te da pistas y te explica con calma. Lo ves en pantalla como un avatar que habla contigo: hoy te acompaña Leonardo, y muy pronto podrás personalizar el tuyo.</p>
-        <ul class="checks">
-          <li><div><b>Ve tu página</b><span>Entiende tu letra, tus esquemas y tus PDF.</span></div></li>
-          <li><div><b>Quiz y tarjetas</b><span>Crea preguntas a partir de tus apuntes y te corrige.</span></div></li>
-          <li><div><b>Conversa en voz alta</b><span>Pregúntale hablando y escucha su respuesta con voz natural.</span></div></li>
-          <li><div><b>Dibuja para explicarte</b><span>Pídele un dibujo y lo pegas en tu cuaderno.</span></div></li>
-          <li><div><b>Propone, tú decides</b><span>Sugiere eventos y recordatorios, pero nada se crea sin tu «Crear».</span></div></li>
-          <li><div><b>Tu avatar, a tu manera</b><span>Muy pronto: personaliza el avatar de tu tutor.</span></div></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section id="funciones">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Funciones</p>
-        <h2>Todo lo que esperas de un buen cuaderno</h2>
-        <p class="lead">Y unas cuantas cosas más.</p>
-      </div>
-      <div class="grid">
-        <div class="feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div><h3>Tinta fluida</h3><p>Pluma, resaltador, goma, formas, texto y objetos que mueves y giras.</p></div>
-        <div class="feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><h3>El papel que quieras</h3><p>Rayas, cuadrícula, puntos, Cornell, pentagrama y más.</p></div>
-        <div class="feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg></div><h3>PDF y fotos</h3><p>Importa tus PDF o fotos de la pizarra y escribe encima.</p></div>
-        <div class="feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><h3>Busca en tu letra</h3><p>Encuentra cualquier cosa en títulos, texto, PDF y en lo que escribiste a mano.</p></div>
-        <div class="feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></div><h3>Ordenado a tu manera</h3><p>Carpetas, etiquetas, favoritos y ambientes para estudio, trabajo e ideas.</p></div>
-        <div class="feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div><h3>Calendario y recordatorios</h3><p>¿Anotaste la fecha del examen? El tutor te propone el evento y tú lo apruebas.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section style="padding-top:0">
-    <div class="wrap">
-      <div class="gallery">
-        <figure><img src="/assets/02-cuaderno.webp" alt="Página de un cuaderno con apuntes y un esquema de la célula" width="1100" height="1467" loading="lazy"><figcaption>Tus apuntes, como en papel</figcaption></figure>
-        <figure><img src="/assets/03-tutor.webp" alt="El tutor abierto junto a la página" width="1100" height="1467" loading="lazy"><figcaption>El tutor junto a tu página</figcaption></figure>
-        <figure><img src="/assets/01-biblioteca.webp" alt="Biblioteca con carpetas y cuadernos" width="1100" height="1467" loading="lazy"><figcaption>Tu biblioteca, ordenada</figcaption></figure>
-      </div>
-    </div>
-  </section>
-
-  <section class="privacy" id="privacidad">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Privacidad</p>
-        <h2>Tus notas son tuyas</h2>
-        <p class="lead" style="color:inherit">La privacidad no es un ajuste escondido: así está hecha la app.</p>
-      </div>
+      <p class="fig reveal">Fig. VIII — Privacidad</p>
+      <p class="statement" data-words>Tus notas son tuyas. Viven en tu iPad, y la IA solo ve lo que tú abres, en los cuadernos donde tú la activas.</p>
       <div class="pgrid">
-        <div class="pcard"><h3>Viven en tu iPad</h3><p>Tus cuadernos no se guardan en nuestros servidores. Haz copias de seguridad en Archivos cuando quieras.</p></div>
-        <div class="pcard"><h3>Tú enciendes la IA</h3><p>La activas por cuaderno. Donde está apagada, nada sale de tu iPad.</p></div>
-        <div class="pcard"><h3>Solo lo que abres</h3><p>El tutor ve únicamente la página que tienes abierta o lo que seleccionas.</p></div>
-        <div class="pcard"><h3>Sin rastreo</h3><p>Sin anuncios ni rastreadores. Puedes borrar tu cuenta desde la app.</p></div>
+        <div class="pitem reveal"><b>VIII.1</b><h3>Viven en tu iPad</h3><p>Tus cuadernos no se guardan en nuestros servidores. Haz copias de seguridad en Archivos cuando quieras.</p></div>
+        <div class="pitem reveal"><b>VIII.2</b><h3>Tú enciendes la IA</h3><p>La activas por cuaderno. Donde está apagada, nada sale de tu iPad.</p></div>
+        <div class="pitem reveal"><b>VIII.3</b><h3>Solo lo que abres</h3><p>El tutor ve únicamente la página que tienes abierta o lo que seleccionas.</p></div>
+        <div class="pitem reveal"><b>VIII.4</b><h3>Sin rastreo</h3><p>Sin anuncios ni rastreadores. Puedes borrar tu cuenta desde la app.</p></div>
       </div>
-      <p class="note" style="color:inherit;opacity:.85">Detalles en nuestra <a href="/privacidad/">política de privacidad</a>.</p>
+      <p class="plink reveal">Detalles en nuestra <a href="/privacidad/">política de privacidad</a>.</p>
     </div>
   </section>
 
-  <section id="planes">
+  <section class="sec" id="planes">
     <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Planes</p>
-        <h2>Escribir es gratis. El tutor, cuando lo necesites.</h2>
+      <div class="sec-head center reveal">
+        <p class="fig">Fig. IX — Planes</p>
+        <h2>Escribir es gratis.<br>El tutor, cuando lo necesites.</h2>
       </div>
       <div class="plans">
-        <div class="plan">
+        <div class="plan reveal">
           <h3>Cuaderno</h3>
           <p class="price">Gratis</p>
-          <ul>
-            <li>Cuadernos, carpetas y etiquetas sin límite</li>
-            <li>Todas las herramientas de escritura</li>
-            <li>PDF, fotos y búsqueda en tu letra</li>
-            <li>Copias de seguridad</li>
-          </ul>
+          <ul><li>Cuadernos, carpetas y etiquetas sin límite</li><li>Todas las herramientas de escritura</li><li>PDF, fotos y búsqueda en tu letra</li><li>Copias de seguridad</li></ul>
         </div>
-        <div class="plan featured">
+        <div class="plan featured reveal">
           <span class="tag">7 días gratis</span>
           <h3>Meridad con tutor</h3>
           <p class="price">Suscripción mensual</p>
-          <ul>
-            <li>Todo lo del plan gratis</li>
-            <li>El tutor: preguntas, quiz y tarjetas</li>
-            <li>Conversación por voz y voz natural</li>
-            <li>Dibujos y acciones de calendario</li>
-          </ul>
+          <ul><li>Todo lo del plan gratis</li><li>El tutor: preguntas, quiz y tarjetas</li><li>Conversación por voz y voz natural</li><li>Dibujos y acciones de calendario</li></ul>
         </div>
       </div>
       <p class="note">El precio en tu moneda aparece en la App Store. Se renueva cada mes y la cancelas cuando quieras desde los ajustes de tu cuenta de Apple.</p>
     </div>
   </section>
 
-  <section id="preguntas" style="padding-top:0">
+  <section class="sec" id="preguntas" style="padding-top:20px">
     <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Preguntas frecuentes</p>
-        <h2>Lo que nos suelen preguntar</h2>
+      <div class="sec-head center reveal">
+        <p class="fig">Fig. X — Preguntas</p>
+        <h2>Lo que nos suelen preguntar.</h2>
       </div>
       <div class="faq">
         <details><summary>¿Necesito suscripción para usar Meridad?</summary><p>No. Puedes escribir, importar PDF, buscar y abrir todos tus cuadernos sin pagar. La suscripción es para las funciones de IA del tutor, y los primeros 7 días son gratis.</p></details>
@@ -205,63 +228,24 @@
         <details><summary>¿Mis notas se suben a internet?</summary><p>No se guardan en nuestros servidores. Solo cuando le preguntas algo al tutor, en un cuaderno donde activaste la IA, se envía lo necesario para responderte (la página o lo que seleccionaste), sin guardarlo.</p></details>
         <details><summary>¿Funciona sin conexión?</summary><p>Sí: escribir, organizar, buscar y repasar tus tarjetas funciona sin internet. El tutor necesita conexión para responder.</p></details>
         <details><summary>¿El tutor me hace la tarea?</summary><p>No es su estilo. Está pensado para que entiendas: te explica, te da pistas y te pregunta para que llegues tú a la respuesta.</p></details>
+        <details><summary>¿Puedo cambiar el avatar del tutor?</summary><p>Hoy te acompaña Leonardo. En una próxima actualización podrás personalizar tu avatar.</p></details>
         <details><summary>¿Cómo cancelo la suscripción?</summary><p>Desde los ajustes de tu iPad: toca tu nombre › Suscripciones › Meridad. La cancelación la gestiona Apple.</p></details>
         <details><summary>¿Cómo los contacto?</summary><p>Escríbenos a <a href="mailto:soporte@meridad.app">soporte@meridad.app</a>.</p></details>
       </div>
     </div>
   </section>
-
-  <section class="final" style="padding-top:0">
-    <div class="wrap">
-      <div class="box">
-        <img class="leo-sm" src="/assets/leonardo.webp" alt="" width="560" height="855" loading="lazy">
-        <h2>Tu próximo examen, con tu tutor al lado</h2>
-        <p class="lead">Disponible en la App Store para iPad.</p>
-        <div class="cta"><a class="btn btn-primary" href="https://apps.apple.com/app/id6827345327">Descargar gratis</a></div>
-      </div>
-    </div>
-  </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <a class="brand" href="/"><img src="/assets/logo.png" alt="" width="34" height="34">Meridad</a>
-    <nav aria-label="Legal">
-      <a href="mailto:soporte@meridad.app">Soporte</a>
-      <a href="/terminos/">Términos</a>
-      <a href="/privacidad/">Privacidad</a>
-    </nav>
-    <span>© 2026 Meridad</span>
-  </div>
+<div id="finale" aria-hidden="true"></div>
+
+<footer class="foot">
+  <span>© 2026 Meridad</span>
+  <nav><a href="mailto:soporte@meridad.app">Soporte</a><a href="/terminos/">Términos</a><a href="/privacidad/">Privacidad</a></nav>
 </footer>
 
-<script>
-  // Borde de la barra al desplazarse
-  const top_ = document.getElementById('top');
-  addEventListener('scroll', () => top_.classList.toggle('scrolled', scrollY > 8), { passive: true });
 
-  // Citas de la burbuja, con fuente verificable:
-  // Leonardo (Códice Forster III y Códice Atlántico), Aristóteles (según Diógenes Laercio, V.18),
-  // Sor Juana (Respuesta a sor Filotea, 1691), Mandela (discurso de 2003)
-  const bubble = document.getElementById('bubble');
-  const quotes = [
-    ['La sabiduría es hija de la experiencia.', 'Leonardo da Vinci'],
-    ['Así como el hierro se oxida sin uso, el ingenio sin ejercicio se echa a perder.', 'Leonardo da Vinci'],
-    ['La raíz de la educación es amarga, pero su fruto es dulce.', 'Aristóteles'],
-    ['Estudio por ver si con estudiar ignoro menos.', 'Sor Juana Inés de la Cruz'],
-    ['La educación es el arma más poderosa que puedes usar para cambiar el mundo.', 'Nelson Mandela']
-  ];
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    let i = 0;
-    setInterval(() => {
-      bubble.classList.add('out');
-      setTimeout(() => {
-        i = (i + 1) % quotes.length;
-        bubble.innerHTML = `«${quotes[i][0]}»<cite>${quotes[i][1]}</cite>`;
-        bubble.classList.remove('out');
-      }, 350);
-    }, 6500);
-  }
-</script>
+
+
+<noscript><p class="nogl">Esta página necesita JavaScript. <a href="/clasica/">Ver la versión clásica</a>.</p></noscript>
 </body>
 </html>

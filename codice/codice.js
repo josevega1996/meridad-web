@@ -27,7 +27,7 @@ let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
 } catch {
-  location.replace('/');
+  location.replace('/clasica/');
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -52,7 +52,7 @@ const FLOOR = -H / 2 - 0.12;                  // la mesa / el suelo
 const desk = document.getElementById('desk');
 // Fotos del escritorio (prueba): pantalla del iPad en fracciones de la imagen
 const PHOTOS = {
-  a: { src: 'escritorio-a', w: 1536, h: 1024, cx: 0.5, cy: 0.4688, sw: 0.1615, sh: 0.3477 },
+  a: { src: '/codice/escritorio-a', w: 1536, h: 1024, cx: 0.5, cy: 0.4688, sw: 0.1615, sh: 0.3477 },
   b: { src: 'escritorio-b', w: 1536, h: 1024, cx: 0.4987, cy: 0.4551, sw: 0.1823, sh: 0.3945 },
   c: { src: 'escritorio-c', w: 2528, h: 1696, cx: 0.5005, cy: 0.548, sw: 0.179, sh: 0.362 },
 };
@@ -339,7 +339,7 @@ function setProgress(p) {
   gsap.to({ v: shown }, { v: p, duration: 0.4, onUpdate() { shown = this.targets()[0].v; pctEl.textContent = Math.round(shown * 100); mPath.style.strokeDashoffset = 400 * (1 - shown); } });
 }
 const gltf = await new Promise((res, rej) => {
-  new GLTFLoader(manager).load('leonardo.glb', res, (e) => e.total && setProgress(e.loaded / e.total * 0.95), rej);
+  new GLTFLoader(manager).load('/codice/leonardo.glb', res, (e) => e.total && setProgress(e.loaded / e.total * 0.95), rej);
 });
 const model = gltf.scene;
 const box = new THREE.Box3().setFromObject(model);
