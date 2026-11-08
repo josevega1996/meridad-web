@@ -15,6 +15,12 @@ await new Promise((r) => (window.gsap && window.ScrollTrigger ? r() : addEventLi
 const { gsap, ScrollTrigger } = window;
 gsap.registerPlugin(ScrollTrigger);
 
+// Títulos que entran letra por letra (se separan antes de crear las animaciones)
+document.querySelectorAll('[data-split], .mega').forEach((el) => {
+  el.innerHTML = el.innerHTML.split(/<br\s*\/?>/).map((ln) =>
+    `<span class="line">${[...ln].map((c) => `<span class="ch">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</span>`).join('');
+});
+
 // ---------- Renderizador ----------
 const canvas = $('#gl');
 let renderer;
@@ -53,6 +59,7 @@ const PHOTOS = {
 let photoKey = 'a';
 const PHOTO = { fill: 1 };
 const flash = document.getElementById('flash');
+const glow = document.getElementById('glow');
 let glIntro = 0;
 function placePhoto() {
   const ph = PHOTOS[photoKey], vw = innerWidth, vh = innerHeight;
@@ -378,7 +385,8 @@ const S = {
   rx: -0.22, ry: -0.42,
   ink: 0, lift: 0, pen: 0,
   leoTurn: 0.4,
-  av: 0, away: 0,                             // escena de avatares (siluetas / iPad que se aparta)
+  av: 0, away: 0, splashOn: 0, leoHide: 0,    // cierre: pantalla de Meridad y sin Leonardo
+                              // escena de avatares (siluetas / iPad que se aparta)
   focus: 0, end: 0,                           // escena de Leonardo / cierre (ajustes en vertical)
 };
 
@@ -506,8 +514,11 @@ ScrollTrigger.batch('.reveal', {
 // ---------- Cierre: vuelve el 3D y la llamada a descargar ----------
 gsap.fromTo(glFade, { o: 0 }, { o: 1, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '#finale', start: 'top bottom', end: 'top 30%', scrub: true } });
 const tl2 = gsap.timeline({ paused: true, defaults: { ease: 'power2.inOut' } });
-tl2.to(S, { hero: 0, cx: 0, cy: 0.7, cz: 11.6, tx: -0.2, ty: 1.35, tz: 0, rx: -0.12, ry: -0.3, lift: 0, leoTurn: 0.35, focus: 0, end: 1, away: 0, av: 0, duration: 1 }, 0)
-  .fromTo('.p4', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 0.6);
+tl2.to(S, { hero: 0, cx: 0, cy: 0.5, cz: 12.6, tx: 0, ty: 0.55, tz: 0, rx: -0.06, ry: 0, lift: 0, focus: 0, end: 1, away: 0, av: 0, splashOn: 1, leoHide: 1, duration: 1 }, 0)
+  .fromTo('.p4 .fig', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.3 }, 0.45)
+  .fromTo('.p4', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.05 }, 0.45)
+  .fromTo('.p4 .mega .ch', { yPercent: 115 }, { yPercent: 0, duration: 0.4, stagger: 0.006, ease: 'expo.out' }, 0.5)
+  .fromTo('.p5', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'power2.out' }, 0.75);
 ScrollTrigger.create({ trigger: '#finale', start: 'top 70%', end: 'bottom bottom', scrub: reduce ? true : 1, onUpdate: (st) => tl2.progress(st.progress) });
 
 // ---------- Bucle de dibujo ----------
@@ -550,9 +561,13 @@ function render() {
   const floatY = reduce ? 0 : Math.sin(t * 0.8) * 0.03 * S.hero * (1 - pull);
   ipad.rotation.set(lerp(S.rx + (reduce ? 0 : Math.sin(t * 0.6) * 0.015), 0, pull), lerp(S.ry + (reduce ? 0 : mouse.sx * 0.06 * S.hero), 0, pull), 0);
   ipad.position.set(0, floatY, 0);
-  splash.material.opacity = clamp((k - 0.1) / 0.18, 0, 1);
+  splash.material.opacity = Math.max(clamp((k - 0.1) / 0.18, 0, 1), S.splashOn);
+  inkGroup.visible = S.splashOn < 0.5;
+  // cierre: el iPad gira despacio, como en una vitrina
+  ipad.rotation.y += reduce ? 0 : S.end * Math.sin(t * 0.5) * 0.38;
+  glow.style.opacity = S.end * glFade.o;
   leo.position.set(leoBase.x, FLOOR, leoBase.z);
-  leo.scale.setScalar(Math.max(0.0001, 1 - sm(pull, 0.02, 0.25)));   // aparece al terminar de salir
+  leo.scale.setScalar(Math.max(0.0001, (1 - sm(pull, 0.02, 0.25)) * (1 - S.leoHide)));   // aparece al terminar de salir
   leo.rotation.y = S.leoTurn + mouse.sx * 0.45;
   leo.rotation.x = mouse.sy * 0.06;
   // el iPad se aparta hacia arriba para dejar ver la fila de avatares
@@ -614,10 +629,7 @@ if (!reduce) setInterval(() => {
 }, 5500);
 
 // ---------- Entrada ----------
-document.querySelectorAll('[data-split]').forEach((el) => {
-  el.innerHTML = el.innerHTML.split(/<br\s*\/?>/).map((ln) =>
-    `<span class="line">${[...ln].map((c) => `<span class="ch">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</span>`).join('');
-});
+
 setPhoto(photoKey);
 render();
 setProgress(1);
