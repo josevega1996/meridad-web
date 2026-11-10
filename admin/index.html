@@ -39,6 +39,9 @@ tr.warn td{background:color-mix(in srgb,var(--danger) 9%,transparent)}
 tbody tr.link{cursor:pointer}tbody tr.link:hover td{background:var(--tint)}
 .back{background:none;border:0;color:var(--salvia);font:800 15px var(--sans);padding:0;width:auto;min-height:40px;margin:0;cursor:pointer}
 .who{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:4px 0 16px}.who h2{margin:0;font-size:22px;overflow-wrap:anywhere}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:12px;margin-bottom:12px}
+.prov .kpi .v{font-size:26px}.prov .row{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;margin-top:6px}.prov .row span:last-child{font-variant-numeric:tabular-nums;font-weight:700}
+.prov .src{font-size:12px;color:var(--muted);margin-top:8px}
 </style></head><body>
 <div class="wrap" id="app"></div>
 <script>
@@ -160,6 +163,67 @@ function bars(series, key, fmt, color) {
   return `<svg viewBox="0 0 ${w} ${h}" role="img"><text x="0" y="12">${fmt(max)}</text><line x1="${pad}" x2="${w}" y1="${h - 18}" y2="${h - 18}" stroke="var(--border)"/>${rects}${labels}</svg>`;
 }
 
+const PROVIDER_NAME = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI', gemini: 'Google (Gemini)' };
+// Saldo por proveedor: lo anotado menos lo gastado desde esa fecha (la factura real si hay clave; si no, nuestro registro).
+function providerInfo(p, days) {
+  const b = p.billing || {}, real = b.status === 'ok';
+  const spent = real && b.spent_since != null ? Number(b.spent_since) : p.spent_since != null ? Number(p.spent_since) : null;
+  const available = p.balance != null ? Number(p.balance) - (spent || 0) : null;
+  const perDay = Number(real ? b.period : p.period) / days;
+  const lasts = available != null && perDay > 0 ? available / perDay : null;
+  return { real, spent, available, perDay, lasts };
+}
+function providersPanel(d) {
+  if (!Array.isArray(d.providers)) return `<div class="panel"><h2>Saldo de los proveedores de IA</h2><p class="muted">No se pudo leer el saldo de los proveedores. Inténtalo en un momento.</p></div>`;
+  const days = d.days, src = { no_key: 'Factura real: falta la clave de administrador en el servidor', error: 'Factura real: el proveedor no respondió; se usa nuestro registro',
+    unavailable: 'Google no da el gasto por API: se usa nuestro registro' };
+  let tAvail = 0, tReal = 0, tOurs = 0, anyBal = false;
+  const cards = d.providers.map(p => {
+    const b = p.billing || {}, i = providerInfo(p, days);
+    if (i.available != null) { tAvail += i.available; anyBal = true; }
+    tOurs += Number(p.period); tReal += i.real ? Number(b.period) : Number(p.period);
+    const diff = i.real && Number(b.period) > 0 ? Math.round(100 * (Number(p.period) - Number(b.period)) / Number(b.period)) : null;
+    const low = i.available != null && (i.available < 5 || (i.lasts != null && i.lasts < 7));
+    return `<div class="kpi ${i.available == null ? '' : low ? 'bad' : 'good'}"><div class="k">${esc(PROVIDER_NAME[p.provider] || p.provider)}</div>
+      <div class="v">${i.available == null ? '—' : usd(i.available)}</div>
+      <div class="s">${i.available == null ? 'Anota el saldo para ver lo disponible' : `disponible${i.lasts != null ? ` · alcanza ~${Math.max(0, Math.floor(i.lasts))} días al ritmo actual` : ''}`}</div>
+      ${p.balance != null ? `<div class="row"><span>Saldo anotado el ${date(p.balance_at)}</span><span>${usd(p.balance)}</span></div>
+        <div class="row"><span>Gastado desde entonces${i.real ? '' : ' (registro)'}</span><span>${usd(i.spent)}</span></div>` : ''}
+      <div class="row"><span>Gasto hoy</span><span>${usd(i.real ? b.today : p.today)}</span></div>
+      <div class="row"><span>Gasto ${days} días · factura</span><span>${i.real ? usd(b.period) : '—'}</span></div>
+      <div class="row"><span>Gasto ${days} días · nuestro registro</span><span>${usd(p.period)}${diff != null && Math.abs(diff) >= 1 ? ` (${diff > 0 ? '+' : ''}${diff}%)` : ''}</span></div>
+      <div class="row"><span>Total registrado</span><span>${usd(p.total)}</span></div>
+      <div class="src">${i.real ? 'Gasto según la factura del proveedor (por día, en UTC).' : esc(src[b.status] || '')}</div></div>`;
+  }).join('');
+  const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  return `<div class="panel"><h2>Saldo de los proveedores de IA</h2>
+    <div class="grid" style="margin-bottom:12px">
+      <div class="kpi"><div class="k">Disponible en total</div><div class="v">${anyBal ? usd(tAvail) : '—'}</div><div class="s">suma de los saldos anotados menos lo gastado</div></div>
+      <div class="kpi"><div class="k">Gastado ${days} días</div><div class="v">${usd(tReal)}</div><div class="s">factura real donde hay clave · registro: ${usd(tOurs)}</div></div>
+    </div>
+    <div class="prov">${cards}</div>
+    <form id="bal" class="settings"><div><label for="bp">Proveedor</label><select id="bp" style="min-height:40px">${Object.entries(PROVIDER_NAME).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
+      <div><label for="ba">Saldo (USD)</label><input id="ba" type="number" step="0.01" min="0" required></div>
+      <div><label for="bd">Fecha y hora</label><input id="bd" type="datetime-local" value="${now}" max="${now}" style="width:200px" required></div>
+      <div><button class="btn primary" id="bgo" type="submit" style="min-height:40px;width:auto;margin:0">Anotar saldo</button></div></form>
+    <p class="err" id="berr" role="alert"></p>
+    <p class="note">Ningún proveedor da el saldo prepagado por API: cópialo de su consola (o anota una recarga sumada al saldo que quedaba) y el panel le resta lo gastado desde esa fecha. La factura es por día: el día del saldo se cuenta entero, así que lo disponible puede salir un poco por debajo del real.</p></div>`;
+}
+function bindBalance() {
+  const f = document.getElementById('bal'); if (!f) return;
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const go = document.getElementById('bgo'), err = document.getElementById('berr');
+    go.disabled = true; err.textContent = '';
+    const body = { provider: document.getElementById('bp').value, amount_usd: Number(document.getElementById('ba').value), as_of: new Date(document.getElementById('bd').value).toISOString() };
+    try {
+      let r = await fetch(`${SUPABASE_URL}/functions/v1/admin-stats`, { method: 'POST', headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + sess.get('at'), 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.status === 401 && await refresh()) r = await fetch(`${SUPABASE_URL}/functions/v1/admin-stats`, { method: 'POST', headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + sess.get('at'), 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) { err.textContent = r.status === 400 ? 'Revisa el monto y la fecha (no puede ser futura).' : 'No se pudo guardar. Inténtalo de nuevo.'; go.disabled = false; return; }
+      load();
+    } catch (_) { err.textContent = 'Sin conexión. Revisa tu red.'; go.disabled = false; }
+  };
+}
 function render() {
   const d = state.data, o = d.overview, days = d.days;
   const net = state.price * (1 - state.fee / 100);
@@ -175,6 +239,8 @@ function render() {
       .map(u => `<b>${esc(u.email)}</b> cuesta ~${usd(perUser30(u))}/mes y deja ${usd(net)}: <b>pierdes dinero</b> con esta cuenta.`),
     ...d.users.filter(u => u.status === 'trial' && u.trial_ends_at && new Date(u.trial_ends_at) < soon)
       .map(u => `La prueba de <b>${esc(u.email)}</b> termina ${date(u.trial_ends_at)} (última conexión ${ago(u.last_seen)}).`),
+    ...(d.providers || []).map(p => [p, providerInfo(p, days)]).filter(([, i]) => i.available != null && (i.available < 5 || (i.lasts != null && i.lasts < 7)))
+      .map(([p, i]) => `A <b>${esc(PROVIDER_NAME[p.provider] || p.provider)}</b> le quedan ~${usd(i.available)}${i.lasts != null ? ` (unos ${Math.max(0, Math.floor(i.lasts))} días al ritmo actual)` : ''}: <b>recarga crédito</b>.`),
   ];
   d.users.forEach(u => u.cap = u.daily_cost_usd ? Math.round(100 * Number(u.today_cost) / Number(u.daily_cost_usd)) : 0);
   const q = state.q.toLowerCase();
@@ -205,6 +271,7 @@ function render() {
     ${kpi('Ingreso estimado', usd(revenue) + '<small>/mes</small>', `${int(o.subscribed)} × ${usd(net)} neto`)}
     ${kpi('Margen estimado', usd(margin) + '<small>/mes</small>', 'ingreso − gasto proyectado', margin >= 0 ? 'good' : 'bad')}
   </div>
+  ${providersPanel(d)}
   ${alerts.length ? `<div class="panel"><h2>Alertas</h2><ul class="alerts">${alerts.map(a => `<li>${a}</li>`).join('')}</ul></div>` : ''}
   <div class="two">
     <div class="panel chart"><h2>Gasto diario de IA (USD)</h2>${bars(d.series, 'cost', usd, 'var(--salvia)')}</div>
@@ -249,6 +316,7 @@ function render() {
     const k = th.dataset.k; state.sort = [k, state.sort[0] === k ? -state.sort[1] : -1]; store.set('sort', state.sort); render(); });
   ['price', 'fee'].forEach(id => el(id).onchange = e => { state[id] = Number(e.target.value) || 0; store.set(id, state[id]); render(); });
   document.querySelectorAll('tr[data-u]').forEach(tr => tr.onclick = () => openUser(tr.dataset.u));
+  bindBalance();
 }
 
 function openUser(id) { state.user = id; state.detail = null; scrollTo(0, 0); load(); }
