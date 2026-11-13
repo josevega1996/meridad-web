@@ -1,0 +1,267 @@
+/* Futuro · portada oscura: la luz sale del iPad (mismos tokens que el códice) */
+:root{--serif:"Fraunces",Georgia,serif;--sans:"Nunito",system-ui,-apple-system,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --bg:#0c1410;--ink:#F4EFE4;--muted:#E2D8C6;--accent:#F08A4B;--brand:#CFE3C9;--btn:#F4EFE4;--btnink:#1A2F22;
+  --card:rgba(244,239,228,.04);--cardline:rgba(244,239,228,.13);--line:rgba(244,239,228,.08);--glow:#9ff0c4}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:clip}
+a{color:inherit}
+em{font-style:normal;color:var(--brand)}
+#gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;opacity:0;transition:opacity 1.2s ease}
+body.ready #gl{opacity:1}
+/* sombra suave donde va el texto, y viñeta */
+.veil{position:fixed;inset:0;pointer-events:none;z-index:1;background:
+  radial-gradient(120% 100% at 62% 48%,transparent 50%,rgba(3,7,5,.72) 100%),
+  linear-gradient(90deg,rgba(6,12,9,.55) 0%,rgba(6,12,9,.2) 30%,transparent 46%)}
+.grain{position:fixed;inset:-50%;z-index:2;pointer-events:none;opacity:.06;mix-blend-mode:overlay;background-size:256px;animation:grain 1s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-4%)}60%{transform:translate(-4%,-1%)}80%{transform:translate(3%,3%)}}
+@media (prefers-reduced-motion:reduce){.grain{animation:none}}
+
+.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:28px;padding:16px clamp(16px,3vw,36px)}
+.brand{display:flex;align-items:center;gap:10px;font:600 21px var(--serif);text-decoration:none}
+.brand img{border-radius:22.5%;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.bar nav{display:flex;gap:22px;margin-left:auto}
+.bar{transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+body.reading .bar{background:rgba(10,17,13,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom-color:var(--line)}
+.bar nav a{text-decoration:none;transition:color .2s,opacity .2s;font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.85}
+.bar nav a:hover{color:var(--ink);opacity:1}
+.store{display:inline-flex;align-items:center;gap:10px;background:var(--btn);color:var(--btnink);text-decoration:none;border-radius:14px;padding:10px 20px 10px 16px;font:800 18px/1.05 var(--sans);transition:transform .2s,box-shadow .2s;pointer-events:auto}
+.store:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.store svg{width:26px;height:26px;fill:currentColor}
+.store small{display:block;font:600 11px var(--sans);opacity:.75}
+.store.small{padding:9px 16px;font-size:14px;border-radius:12px}
+
+.panels{position:fixed;inset:0;z-index:10;pointer-events:none}
+.panel{position:absolute;left:clamp(16px,6.5vw,104px);top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;max-width:min(520px,90vw);text-shadow:0 2px 26px rgba(3,7,5,.7)}
+.p1,.pT,.p2,.p3,.pav,.pF,.pP,.pPl{opacity:0;visibility:hidden}
+.kicker,.fig{font:500 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+.fig::before{content:"";display:inline-block;width:28px;height:1px;background:currentColor;vertical-align:middle;margin-right:10px}
+h1{font:600 clamp(52px,7.6vw,118px)/.92 var(--serif);letter-spacing:-.035em;margin:0 0 22px}
+h2{font:600 clamp(36px,4.6vw,64px)/1 var(--serif);letter-spacing:-.025em;margin:0 0 16px}
+.panel p{margin:0 0 20px;font-size:19px;color:var(--muted);max-width:400px}
+.hint{font:500 12px var(--mono)!important;letter-spacing:.14em;text-transform:uppercase;margin-top:26px!important}
+.hint span{display:inline-block;animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateY(5px)}}
+
+/* Anotaciones de plano técnico que siguen puntos de la mesa */
+.annos{position:fixed;inset:0;z-index:9;pointer-events:none}
+.anno{position:absolute;left:0;top:0;opacity:0;will-change:transform}
+.anno i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;border:1.5px solid var(--accent);background:rgba(8,16,12,.85)}
+.anno i::after{content:"";position:absolute;left:3px;top:3px;width:2px;height:2px;border-radius:50%;background:var(--accent)}
+.anno span{position:absolute;left:28px;top:-34px;white-space:nowrap;font:500 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);padding:4px 8px;border:1px solid rgba(240,138,75,.55);background:rgba(8,16,12,.8)}
+.anno span::before{content:"";position:absolute;left:-24px;top:100%;width:30px;height:1px;background:var(--accent);transform-origin:right;transform:rotate(-48deg) translate(4px,8px)}
+.anno.left span{left:auto;right:28px}
+.anno.left span::before{left:auto;right:-24px;transform-origin:left;transform:rotate(48deg) translate(-4px,8px)}
+
+#intro{position:relative;height:140vh}
+/* portada sobre la mesa: un velo a la izquierda para leer el título sin tapar la foto */
+.p0::before{content:"";position:absolute;z-index:-1;top:-60vh;bottom:-60vh;left:-40vw;width:95vw;background:linear-gradient(90deg,rgba(4,7,5,.82) 0%,rgba(4,7,5,.62) 45%,rgba(4,7,5,0) 100%);pointer-events:none}
+@media (max-aspect-ratio:1/1){.p0::before{left:-10vw;right:-10vw;width:auto;top:-40vh;bottom:-10vh;background:linear-gradient(0deg,rgba(4,7,5,.85) 0%,rgba(4,7,5,.6) 55%,rgba(4,7,5,0) 100%)}}
+#story{position:relative;height:2340vh}
+
+@media (max-width:900px){.bar nav{display:none}.bar .store{margin-left:auto}}
+@media (max-aspect-ratio:1/1){
+  .veil{background:linear-gradient(0deg,rgba(4,9,6,.9) 0%,rgba(4,9,6,.5) 32%,transparent 52%)}
+  .panel{left:5vw;right:5vw;top:auto;bottom:max(5vh,24px);display:block;max-width:none;text-align:center}
+  .panel p{margin-left:auto;margin-right:auto}
+  .fig::before{display:none}
+  h1{font-size:clamp(40px,12vw,68px);margin-bottom:14px}
+  .p0 .kicker{display:none}
+  .anno span{font-size:10px}
+  .anno[data-anchor=av0],.anno[data-anchor=av2]{display:none}
+}
+
+@media (min-aspect-ratio:1/1) and (max-aspect-ratio:7/5){.anno[data-anchor=av0],.anno[data-anchor=av2]{display:none}}
+
+/* Dónde estás: etiqueta del lugar, abajo a la derecha */
+
+/* «Los tres a la vez»: título arriba al centro, y por columna su nombre y dos líneas finas que las separan */
+.panel.pT{left:0;right:0;top:clamp(70px,11vh,110px);bottom:auto;max-width:none;align-items:center;text-align:center}
+.pT .fig::before{display:none}
+.pT h2{font-size:clamp(28px,3.2vw,46px)}
+.trio{position:fixed;inset:0;z-index:9;pointer-events:none;opacity:0}
+.trio-t{position:absolute;left:0;top:0;margin:0;white-space:nowrap;font:500 12.5px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--ink);text-shadow:0 2px 14px rgba(3,7,5,.8);will-change:transform}
+.trio-t small{font:500 10px var(--mono);letter-spacing:.14em;margin-right:10px;color:var(--accent)}
+.trio-l{position:absolute;left:0;top:0;width:1px;will-change:transform;background:linear-gradient(180deg,transparent,rgba(244,239,228,.38) 14%,rgba(244,239,228,.3) 80%,transparent)}
+@media (max-aspect-ratio:1/1){.panel.pT{top:auto;bottom:max(5vh,24px)}.trio-t{font-size:10px;letter-spacing:.14em}.trio-t small{display:none}}
+
+/* ---------- Resto de la página: secciones que pasan sobre el 3D (atenuado) ---------- */
+/* .shade cubre el 3D, los textos fijos y las etiquetas mientras lees; el contenido va por encima */
+.shade{position:fixed;inset:0;z-index:11;background:var(--bg);opacity:0;pointer-events:none}
+.content{position:relative;z-index:12}
+.content img{max-width:100%;height:auto;display:block}
+.wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+.sec{padding:120px 0;scroll-margin-top:40px}
+.sec.tight{padding-top:20px}
+.sec-head{max-width:720px;margin-bottom:56px}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head.center .fig::before{display:none}
+.sec-head p{color:var(--muted);font-size:19px;margin:0}
+.sec h2,.gallery h2{font-size:clamp(34px,4.2vw,58px)}
+.lead{color:var(--muted);font-size:19px}
+
+/* Franja que corre */
+.marquee{overflow:hidden;border-top:1px solid var(--cardline);border-bottom:1px solid var(--cardline);padding:22px 0;white-space:nowrap}
+.marquee div{display:inline-flex;gap:48px;animation:run 32s linear infinite;font:600 clamp(22px,2.6vw,34px) var(--serif)}
+.marquee span::after{content:"✦";color:var(--accent);margin-left:48px;font-size:.6em;vertical-align:middle}
+@keyframes run{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.marquee div{animation:none}}
+
+/* Funciones: el iPad vuelve al centro del mundo 3D y cada función sale como anotación de plano técnico
+   (punto sobre la pantalla, línea guía y ficha), en tres pasos: Escribe · Organiza · Estudia */
+.panel.pF,.panel.pP{top:clamp(84px,13vh,120px);bottom:auto;justify-content:flex-start;max-width:min(410px,30vw);text-shadow:0 2px 26px rgba(3,7,5,.8)}
+.pF h2{font-size:clamp(30px,3.1vw,46px);margin-bottom:10px}
+.pF > p:not(.fig){font-size:17px;margin:0 0 22px}
+.pP .statement{font:600 clamp(24px,2.3vw,34px)/1.18 var(--serif);letter-spacing:-.015em;margin:0 0 18px;max-width:none}
+.pP .statement .w{opacity:.16;transition:opacity .25s,color .25s}
+.pP .statement .w.on{opacity:1}
+.pP .plink{font-size:14px!important;margin:0;pointer-events:auto}
+.feat-layer{position:fixed;inset:0;z-index:9;pointer-events:none}
+.feat-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.feat-steps li{font:600 15px var(--sans);color:var(--muted);opacity:.5;padding:5px 0 5px 14px;border-left:1px solid var(--cardline);transition:opacity .3s,color .3s,border-color .3s}
+.feat-steps li small{font:500 10px var(--mono);letter-spacing:.14em;margin-right:10px;color:rgba(240,138,75,.7)}
+.feat-steps li.on{opacity:1;color:var(--ink);border-left-color:var(--accent)}
+.feat-lines{position:absolute;inset:0;opacity:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.feat-lines path{fill:none;stroke:var(--accent);stroke-width:1.2;opacity:.85}
+.feat-lines circle.d{fill:rgba(8,16,12,.9);stroke:var(--accent);stroke-width:1.5}
+.feat-lines circle.c{fill:var(--accent)}
+.callouts{position:absolute;inset:0;pointer-events:none}
+.callout{position:absolute;left:0;top:0;width:min(270px,22vw);display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start;padding:14px 16px 15px;border:1px solid rgba(240,138,75,.45);border-radius:14px;background:rgba(8,16,12,.78);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);opacity:0;will-change:transform,opacity;box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.callout .no{position:absolute;top:-9px;right:12px;padding:0 6px;background:#0c1410;font:500 10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.callout .ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;border:1px dashed rgba(207,227,201,.5);color:var(--glow);filter:drop-shadow(0 0 6px rgba(159,240,196,.45))}
+.callout .ico svg{width:20px;height:20px}
+.callout h3{font:600 17px/1.2 var(--serif);margin:1px 0 4px}
+.callout p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.45}
+@media (max-aspect-ratio:1/1){
+  .panel.pF,.panel.pP{left:16px;right:16px;top:92px;max-width:none;text-align:left}
+  .pF h2{font-size:clamp(24px,6.4vw,36px)}
+  .plink{margin-top:12px;font-size:13px}
+  .pF > p:not(.fig){display:none}
+  .pP .statement{font-size:clamp(22px,6vw,30px)}
+  .feat-steps{flex-direction:row;gap:14px}
+  .feat-steps li{border-left:0;padding:4px 0;border-bottom:1px solid transparent}
+  .feat-steps li.on{border-bottom-color:var(--accent)}
+  .feat-lines{display:none}
+  .callout{width:auto;left:max(16px,calc(50vw - 300px));right:max(16px,calc(50vw - 300px));grid-template-columns:30px 1fr;gap:10px;padding:10px 14px 11px}
+  .callout .ico{width:30px;height:30px;border-radius:9px}.callout .ico svg{width:16px;height:16px}
+  .callout h3{font-size:15.5px;margin:0 0 2px}.callout p{font-size:12.5px;line-height:1.4}
+  .callout[data-g="3"] p{display:none}.callout[data-g="3"]{align-items:center}
+}
+
+/* Privacidad */
+.plink{margin-top:28px;color:var(--muted);font-size:15px}
+.plink a{color:var(--brand)}
+
+/* Planes y preguntas: sobre el 3D atenuado, con el lenguaje de las anotaciones (borde fino, número sobre el borde) */
+.content{background:linear-gradient(180deg,transparent,rgba(10,17,13,.35) 30%,rgba(10,17,13,.35) 70%,transparent)}
+.sec-head h2{max-width:760px}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:960px}
+.plan{position:relative;background:rgba(8,16,12,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(244,239,228,.16);border-radius:18px;padding:34px 32px 30px;box-shadow:0 18px 50px rgba(0,0,0,.4)}
+.plan .no,.faq .qn{font:500 10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.plan .no{position:absolute;top:-8px;right:16px;padding:0 6px;background:#0c1410}
+.plan.featured{border-color:rgba(240,138,75,.6);box-shadow:0 18px 50px rgba(0,0,0,.4),0 0 50px rgba(240,138,75,.1)}
+.plan .tag{display:inline-block;font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(240,138,75,.5);padding:4px 10px;border-radius:999px;margin-bottom:14px}
+.plan h3{font:600 28px var(--serif);margin:0}
+.plan .price{font:500 13px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:8px 0 20px}
+.plan ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.plan li{padding-left:26px;position:relative}
+.plan li::before{content:"";position:absolute;left:0;top:.55em;width:12px;height:12px;border-radius:50%;border:1.5px solid var(--glow);box-shadow:0 0 8px rgba(159,240,196,.4)}
+.note{color:var(--muted);font-size:14.5px;margin-top:24px;max-width:960px}
+.faq{max-width:900px;border-top:1px solid rgba(240,138,75,.35)}
+.faq details{border-bottom:1px solid var(--cardline);padding:20px 4px}
+.faq summary{cursor:pointer;font:600 21px var(--serif);list-style:none;display:grid;grid-template-columns:52px 1fr auto;align-items:baseline;gap:8px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--accent);font:400 26px/1 var(--mono);transition:transform .25s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{color:var(--muted);margin:12px 0 0 60px}
+.faq a{color:var(--brand)}
+@media (max-width:640px){.faq summary{grid-template-columns:40px 1fr auto;font-size:18px}.faq details p{margin-left:48px}}
+
+/* Cierre: vuelve el 3D (Leonardo y el iPad) con la llamada a descargar */
+#finale{position:relative;height:230vh}
+.end{position:fixed;left:clamp(16px,6.5vw,104px);top:0;bottom:0;z-index:12;pointer-events:none;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:0;max-width:min(620px,90vw);opacity:0;visibility:hidden;text-shadow:0 2px 26px rgba(3,7,5,.7)}
+.end .store{pointer-events:auto}
+.mega{font:600 clamp(40px,5vw,78px)/.98 var(--serif);letter-spacing:-.03em;margin:0 0 30px}
+.lede-end{font:500 clamp(16px,1.35vw,19px)/1.5 var(--sans);color:var(--muted);max-width:440px;margin:-12px 0 28px}
+.lede-end em{font-style:normal;color:var(--brand)}
+.facts{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:18px;font:500 11.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.facts li+li::before{content:"✦";color:var(--accent);margin-right:18px}
+
+.foot{position:relative;z-index:12;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:22px clamp(16px,3vw,36px);font:500 12px var(--mono);letter-spacing:.08em;color:var(--muted);background:var(--bg);border-top:1px solid var(--line)}
+.foot nav{display:flex;gap:20px}
+.foot a{text-decoration:none}
+.nogl{position:fixed;inset:auto 0 0;z-index:30;margin:0;padding:14px;text-align:center;background:var(--bg)}
+
+@media (max-width:640px){.sec{padding:80px 0}.plans{grid-template-columns:1fr}}
+@media (max-aspect-ratio:1/1){
+  .end{left:16px;right:16px;top:auto;bottom:max(5vh,24px);display:block;max-width:none;text-align:center}
+  .end .fig::before{display:none}
+  .end .store{margin:0 auto}
+  .facts{justify-content:center}
+  .mega{font-size:clamp(32px,9vw,60px);margin-bottom:20px}
+}
+
+/* Pantalla de carga: la «M» se dibuja con el progreso (la misma de la página pública) */
+body.loading{overflow:hidden}
+#loader{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;align-content:center;gap:10px}
+#loader .sketch{width:min(56vw,260px);overflow:visible}
+#loader .guides line{stroke:rgba(244,239,228,.1);stroke-width:1;stroke-dasharray:3 4}
+#loader .ring{fill:none;stroke:var(--ink);stroke-width:1;stroke-dasharray:3 4;opacity:.5}
+#loader .m{fill:none;stroke:var(--ink);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:400;stroke-dashoffset:400;filter:drop-shadow(0 0 8px rgba(159,240,196,.35))}
+#loader .cotas line{stroke:var(--accent);stroke-width:1.5}
+#loader .cotas circle{fill:var(--accent)}
+#loader .count{margin:0;font:500 13px var(--mono);letter-spacing:.12em;color:var(--accent)}
+#loader .cap{margin:0;font:500 11px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+
+/* Tu avatar: «Próxima actualización» */
+.soon{display:inline-block;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(240,138,75,.55);padding:5px 12px;border-radius:999px;text-shadow:none}
+
+/* Burbuja de Leonardo con citas sobre el estudio (centrada sobre su cabeza) */
+.bubble{position:absolute;left:0;top:0;opacity:0;will-change:transform}
+.bubble p{position:absolute;left:0;bottom:22px;transform:translateX(-50%);width:min(290px,70vw);margin:0;background:rgba(10,18,14,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--ink);border:1px solid rgba(159,240,196,.35);border-radius:20px;padding:14px 18px;font:600 15.5px/1.45 var(--sans);box-shadow:0 14px 34px rgba(0,0,0,.4),0 0 30px rgba(159,240,196,.12);transition:opacity .35s,transform .35s}
+.bubble p::after{content:"";position:absolute;left:50%;bottom:-7px;width:12px;height:12px;background:inherit;border-right:1px solid rgba(159,240,196,.35);border-bottom:1px solid rgba(159,240,196,.35);transform:translateX(-50%) rotate(45deg)}
+.bubble p.out{opacity:0;transform:translate(-50%,4px)}
+.bubble cite{display:block;margin-top:6px;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;font-style:normal;color:var(--accent)}
+@media (max-aspect-ratio:1/1){.bubble p{width:min(260px,78vw);font-size:14px}}
+.bubble p::after{left:calc(50% + var(--ax,0px))}
+
+/* Planes: escena 3D (el cuaderno solo · el iPad con el tutor y Leonardo); cada ficha va delante de su iPad */
+.panel.pPl{left:0;right:0;top:clamp(80px,11vh,108px);bottom:auto;max-width:none;align-items:center;text-align:center}
+.pPl .fig::before{display:none}
+.pPl h2{font-size:clamp(28px,3vw,44px)}
+.plan-layer{position:fixed;inset:0;z-index:9;pointer-events:none}
+.plan-layer .plan{position:absolute;left:0;top:0;width:min(300px,30vw);padding:22px 24px 20px;background:rgba(9,17,13,.93);opacity:0;visibility:hidden;will-change:transform,opacity}
+.plan-layer .plan h3{font-size:24px}
+.plan-layer .plan .price{margin:6px 0 14px}
+.plan-layer .plan ul{gap:7px}
+.plan-layer .plan li{font-size:14px;line-height:1.4;padding-left:22px}
+.plan-layer .plan li::before{width:10px;height:10px;top:.4em}
+.plan-layer .note{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(760px,90vw);margin:0;text-align:center;font-size:13px;opacity:0}
+@media (max-aspect-ratio:1/1){.plan-layer .plan{width:calc(50vw - 15px);padding:16px}.plan-layer .plan ul{display:none}}
+
+/* Celular en horizontal (pantallas bajas): todo más compacto para que el texto no pise la escena */
+@media (min-aspect-ratio:1/1) and (max-height:520px){
+  .bar{padding-top:8px;padding-bottom:8px}
+  .kicker,.fig{font-size:10px;margin-bottom:8px}
+  h1{font-size:clamp(30px,11vh,52px);margin-bottom:10px}
+  h2,.pF h2,.pPl h2{font-size:clamp(22px,7.5vh,34px);margin-bottom:8px}
+  .panel{max-width:min(380px,42vw)}
+  .panel p{font-size:13px;margin-bottom:10px}
+  .p0 .kicker,.hint{display:none}
+  .store{padding:7px 14px 7px 12px;font-size:15px}
+  .panel.pF,.panel.pP{top:56px;max-width:min(300px,32vw)}
+  .pF > p:not(.fig),.feat-steps{display:none}
+  .pP .statement{font-size:clamp(15px,5vh,22px);margin-bottom:8px}
+  .plink{margin-top:6px;font-size:12px}
+  .callout{width:min(210px,24vw);grid-template-columns:1fr;padding:8px 10px}
+  .callout .ico,.callout p{display:none}
+  .callout h3{font-size:13.5px;margin:0}
+  .panel.pT,.panel.pPl{top:52px}
+  .plan-layer .plan{width:min(230px,28vw);padding:12px 14px}
+  .plan-layer .plan ul,.plan-layer .note{display:none}
+  .plan-layer .plan h3{font-size:17px}
+  .bubble p{width:220px;font-size:12px;padding:10px 12px}
+  .mega{font-size:clamp(26px,9vh,44px);margin-bottom:10px}
+  .lede-end{font-size:13px;margin:0 0 12px}
+  .facts{display:none}
+  .anno span{font-size:9.5px}
+}
