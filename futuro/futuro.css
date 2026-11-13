@@ -87,6 +87,7 @@ h2{font:600 clamp(36px,4.6vw,64px)/1 var(--serif);letter-spacing:-.025em;margin:
 /* ---------- Resto de la página: secciones que pasan sobre el 3D (atenuado) ---------- */
 /* .shade cubre el 3D, los textos fijos y las etiquetas mientras lees; el contenido va por encima */
 .shade{position:fixed;inset:0;z-index:11;background:var(--bg);opacity:0;pointer-events:none}
+.jump{position:fixed;inset:0;z-index:19;background:var(--bg);opacity:0;visibility:hidden;pointer-events:none}
 .content{position:relative;z-index:12}
 .content img{max-width:100%;height:auto;display:block}
 .wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}

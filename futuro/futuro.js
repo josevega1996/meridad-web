@@ -981,14 +981,26 @@ function frame() {
   if (shade < 0.999) composer.render();         // tapado por el contenido: no se dibuja (ahorra batería)
   requestAnimationFrame(frame);
 }
-// Logo: vuelve al principio de esta página. Menú: desplazamiento suave a cada sección (sin scroll-behavior en CSS: descuadra ScrollTrigger)
-$('.brand').addEventListener('click', (e) => { e.preventDefault(); scrollTo({ top: 0, behavior: reduce ? 'instant' : 'smooth' }); });
+// Logo y menú: van directo al punto, sin recorrer la página a toda velocidad. Se funde a oscuro, salta (las animaciones
+// con scrub se terminan en el acto para no verlas ponerse al día) y se destapa
+const cover = document.createElement('div'); cover.className = 'jump'; cover.setAttribute('aria-hidden', 'true'); document.body.appendChild(cover);
+let jumping = false;
+function jumpTo(top) {
+  const go = () => { scrollTo({ top, behavior: 'instant' }); ScrollTrigger.update(); ScrollTrigger.getAll().forEach((st) => { const tw = st.getTween && st.getTween(); if (tw) tw.progress(1); }); };
+  if (reduce) return go();
+  if (jumping) return; jumping = true;
+  gsap.timeline({ onComplete: () => { jumping = false; } })
+    .to(cover, { autoAlpha: 1, duration: 0.28, ease: 'power2.in' })
+    .add(go)
+    .to(cover, { autoAlpha: 0, duration: 0.55, ease: 'power2.out' }, '+=0.08');
+}
+$('.brand').addEventListener('click', (e) => { e.preventDefault(); jumpTo(0); });
 document.querySelectorAll('.bar nav a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
   e.preventDefault();
   let top;
   if (a.dataset.k) { const st = tl.scrollTrigger; top = st.start + (+a.dataset.k / KEND) * (st.end - st.start); }
-  else { const el = $(a.getAttribute('href')); if (!el) return; top = el.getBoundingClientRect().top + scrollY; }
-  scrollTo({ top, behavior: reduce ? 'instant' : 'smooth' });
+  else { const el = $(a.getAttribute('href')); if (!el) return; top = el.getBoundingClientRect().top + scrollY - $('.bar').offsetHeight - 8; }
+  jumpTo(top);
 }));
 
 // ---------- Citas de la burbuja de Leonardo ----------
