@@ -631,7 +631,8 @@ tl.addLabel('tinta', 0.05).addLabel('sale', 0.45).addLabel('trio', 1.1).addLabel
 gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: '#intro', start: 'top top', end: 'bottom top', scrub: touch ? 1.6 : 1 } })
   .fromTo(view, { intro: 1 }, { intro: 0, duration: 1 }, 0)
   .to('.p0', { autoAlpha: 0, y: -30, filter: 'blur(6px)', duration: 0.2 }, 0.02)
-  .fromTo('.p1', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.18 }, 0.8);
+  .fromTo('.p1 > *', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.18, stagger: 0.02 }, 0.78);
+gsap.set('.p1', { autoAlpha: 1 });   // la entrada de .p1 anima a sus hijos (portada) y la salida al panel (recorrido): no se pisan
 const trioEl = $('.trio'), trioTitles = [...document.querySelectorAll('.trio-t')], trioLines = [...document.querySelectorAll('.trio-l')];
 const TRIO_TOP = 3.3;                                 // altura de los títulos sobre cada iPad (en unidades del iPad grande)
 
